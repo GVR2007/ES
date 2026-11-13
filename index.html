@@ -161,6 +161,20 @@ html{height:100%}
   border-radius:var(--rs);padding:4px 8px;min-width:100px;max-width:200px;height:24px;overflow:hidden;
   white-space:nowrap;color:var(--ok);text-overflow:ellipsis;font-weight:500}
 
+/* ===== I2C LCD ===== */
+.lcd-wrap{display:none;margin-top:6px}
+.lcd-wrap.show{display:block}
+.lcd-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--fg-d);margin-bottom:4px}
+.lcd-bezel{background:#1a2332;border:2px solid #2d3a4d;border-radius:8px;padding:8px 10px;
+  display:inline-block;box-shadow:inset 0 2px 8px rgba(0,0,0,.5),0 2px 4px rgba(0,0,0,.2)}
+.lcd-screen{background:#2a5e2a;border-radius:4px;padding:6px 8px;min-width:210px;
+  font-family:var(--mono);font-size:14px;letter-spacing:2px;line-height:1.6;color:#1a3f1a;
+  text-shadow:0 0 2px rgba(50,200,50,.3);white-space:pre;min-height:42px;
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.3)}
+.lcd-screen.on{color:#0f0;text-shadow:0 0 6px rgba(0,255,0,.5),0 0 12px rgba(0,255,0,.15)}
+.lcd-pins{display:flex;gap:3px;margin-top:4px}
+.lcd-pin{width:6px;height:10px;background:#8b7355;border-radius:1px}
+
 /* ===== TABS ===== */
 .tabs{display:flex;gap:0;border-bottom:2px solid var(--bd);flex-shrink:0;padding:0 10px}
 .tab{font-family:var(--body);font-size:11.5px;font-weight:600;padding:10px 12px;
@@ -326,6 +340,13 @@ html{height:100%}
           <div class="hw-grp">
             <span class="hw-lbl">TX</span>
             <div class="uart-box" id="uart-out">&mdash;</div>
+          </div>
+        </div>
+        <div class="lcd-wrap" id="lcd-wrap">
+          <div class="lcd-title">I2C LCD (0x27)</div>
+          <div class="lcd-bezel">
+            <div class="lcd-screen" id="lcd-screen">________________\n________________</div>
+            <div class="lcd-pins"><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div><div class="lcd-pin"></div></div>
           </div>
         </div>
       </div>
@@ -621,6 +642,7 @@ function cToJs(code,fns){
   js=js.replace(/'\\r'/g,'13');js=js.replace(/'\\n'/g,'10');js=js.replace(/'\\0'/g,'0');
   for(var v in declV){if(v==='main'||v==='void')continue;js=js.replace(new RegExp('(?<![.\\w])'+v+'(?!\\w)','g'),'V.'+v);}
   js=js.replace(/(R\.USART2\.DR\s*=\s*)([^;]+)/g,'$1$2;UART.push($2&0xFF)');
+  js=js.replace(/(R\.I2C1\.DR\s*=\s*)([^;]+)/g,'$1$2;I2CBUF.push($2&0xFF)');
   if(fns){for(var fn in fns){if(fn==='main')continue;
     var fb=cToJs(fns[fn],null);
     var re=new RegExp('\\b'+fn+'\\s*\\(','g'),fm;
@@ -636,11 +658,11 @@ function cToJs(code,fns){
 function buildFn(body,fns){
   try{declV={};var js=cToJs(body,fns);
   js=js.replace(/\bfor\s*\(\s*V\.\w+\s*=[^;]*;[^;]*;[^)]*\)\s*\{[^}]*\}/g,'');
-  return new Function('R','V','UART',js);}catch(e){
+  return new Function('R','V','UART','I2CBUF',js);}catch(e){
     try{declV={};var js2=cToJs(body,null);
     js2=js2.replace(/\bfor\s*\(\s*V\.\w+\s*=[^;]*;[^;]*;[^)]*\)\s*\{[^}]*\}/g,'');
     js2=js2.replace(/\b(?!if\b|else\b|while\b|for\b|var\b|return\b)[a-zA-Z_]\w*\s*\([^)]*\)\s*;?/g,'');
-    return new Function('R','V','UART',js2);}catch(e2){return null;}
+    return new Function('R','V','UART','I2CBUF',js2);}catch(e2){return null;}
   }
 }
 
@@ -834,9 +856,9 @@ function verifyLogic(studentR,code,qi){
     }
     testInputs.forEach(function(ti){
       var refTest=initRegs();execSetup(q.sol,refTest);refTest.USART2.SR=0xC0;refTest.ADC1.SR|=2;
-      ti.setup(refTest);try{refLoopFn(refTest,{},[])}catch(e){}
+      ti.setup(refTest);try{refLoopFn(refTest,{},[],[])}catch(e){}
       var stuTest=initRegs();execSetup(code,stuTest);stuTest.USART2.SR=0xC0;stuTest.ADC1.SR|=2;
-      ti.setup(stuTest);try{stuLoopFn(stuTest,{},[])}catch(e){}
+      ti.setup(stuTest);try{stuLoopFn(stuTest,{},[],[])}catch(e){}
       var rODR_A=(refTest.GPIOA.ODR>>>0),rODR_B=(refTest.GPIOB.ODR>>>0),rODR_C=(refTest.GPIOC.ODR>>>0);
       var sODR_A=(stuTest.GPIOA.ODR>>>0),sODR_B=(stuTest.GPIOB.ODR>>>0),sODR_C=(stuTest.GPIOC.ODR>>>0);
       if(rODR_A===sODR_A&&rODR_B===sODR_B&&rODR_C===sODR_C){
@@ -1044,8 +1066,46 @@ function smartLogicCheck(R,code,prevFindings,hasRefCheck){
 // ===== SIMULATION STATE =====
 var simR=null,simV={},simLoopFn=null,simHandlerFns={},simFns={},simUart=[],simTickTimer=null,simConfig=null;
 
+// ===== I2C LCD SIMULATION =====
+var lcdRows=[[],[]], lcdCur=0, lcdCol=0, lcdOn=false, lcdI2cBuf=[];
+function lcdReset(){lcdRows=[[],[]];lcdCur=0;lcdCol=0;lcdOn=false;lcdI2cBuf=[];
+  document.getElementById('lcd-screen').className='lcd-screen';
+  document.getElementById('lcd-screen').textContent='________________\n________________';
+  document.getElementById('lcd-wrap').classList.remove('show');}
+function lcdCmd(b){
+  if(b===0x01){lcdRows=[[],[]];lcdCur=0;lcdCol=0;}
+  else if(b===0x02){lcdCur=0;lcdCol=0;}
+  else if(b===0x0C||b===0x0E||b===0x0F){lcdOn=true;}
+  else if(b===0x08){lcdOn=false;}
+  else if((b&0xC0)===0x80){lcdCur=0;lcdCol=b&0x3F;}
+  else if((b&0xC0)===0xC0){lcdCur=1;lcdCol=b&0x3F;}
+  else if(b===0x28||b===0x38||b===0x06||b===0x14||b===0x10){}
+}
+function lcdData(b){
+  if(lcdCur<2&&lcdCol<16){lcdRows[lcdCur][lcdCol]=String.fromCharCode(b>=32&&b<127?b:32);lcdCol++;}
+  if(lcdCol>=16){lcdCol=0;lcdCur=(lcdCur+1)%2;}
+}
+function lcdProcessI2C(bytes){
+  for(var i=0;i<bytes.length;i++){
+    var b=bytes[i];
+    var rs=b&1, en=b&4, hi=b&0xF0;
+    if(en){
+      if(!lcdI2cBuf.length)lcdI2cBuf.push({rs:rs,nibble:hi});
+      else{var prev=lcdI2cBuf.pop();var full=(prev.nibble)|(hi>>>4);
+        if(prev.rs)lcdData(full);else lcdCmd(full);lcdI2cBuf=[];}
+    }
+  }
+}
+function lcdRender(){
+  var el=document.getElementById('lcd-screen');
+  var r0='',r1='';
+  for(var i=0;i<16;i++){r0+=lcdRows[0][i]||'_';r1+=lcdRows[1][i]||'_';}
+  el.textContent=r0+'\n'+r1;
+  el.className='lcd-screen'+(lcdOn?' on':'');
+}
+
 function runAll(){
-  simR=initRegs();simV={};simUart=[];declV={};
+  simR=initRegs();simV={};simUart=[];declV={};lcdReset();
   if(simTickTimer){clearInterval(simTickTimer);simTickTimer=null;}
   document.getElementById('uart-out').textContent='\u2014';
   var code=editor.getValue();
@@ -1066,10 +1126,11 @@ function runAll(){
   if(simR.SysTick.CTRL&1&&simR.SysTick.LOAD>0){
     var ms=Math.max(200,Math.round(1000/(16e6/(simR.SysTick.LOAD+1))));
     if(simR.SysTick.CTRL&2&&simHandlerFns['SysTick_Handler'])
-      simTickTimer=setInterval(function(){try{simHandlerFns['SysTick_Handler'](simR,simV,simUart);}catch(e){}updateHW();},ms);
+      simTickTimer=setInterval(function(){try{simHandlerFns['SysTick_Handler'](simR,simV,simUart,lcdI2cBuf);}catch(e){}updateHW();},ms);
   }
   updateHW();
   if(simConfig.adc){var mx=[4095,1023,255,63][[12,10,8,6].indexOf(simConfig.adc.res)];document.getElementById('adc-slider').max=mx||4095;}
+  if(simConfig.i2c){document.getElementById('lcd-wrap').classList.add('show');lcdOn=true;}
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.tp').forEach(function(x){x.classList.remove('active');});
   document.querySelector('[data-t="analysis"]').classList.add('active');
@@ -1078,8 +1139,10 @@ function runAll(){
 
 function runLoop(){
   if(!simLoopFn||!simR)return;
-  simR.USART2.SR=0xC0;simR.ADC1.SR|=2;
-  try{simLoopFn(simR,simV,simUart);}catch(e){}
+  simR.USART2.SR=0xC0;simR.ADC1.SR|=2;simR.I2C1.SR1=3;simR.I2C1.SR2=7;
+  var i2cBefore=lcdI2cBuf.length;
+  try{simLoopFn(simR,simV,simUart,lcdI2cBuf);}catch(e){}
+  if(lcdI2cBuf.length>i2cBefore){lcdProcessI2C(lcdI2cBuf.slice(i2cBefore));lcdRender();}
 }
 
 function syncIDR(){
@@ -1109,7 +1172,7 @@ function togSw(port,pin){
     if(trig){
       simR.EXTI.PR|=(1<<line);
       var hd=extiHandler(line);
-      if(simHandlerFns[hd])try{simHandlerFns[hd](simR,simV,simUart);}catch(e){}
+      if(simHandlerFns[hd])try{simHandlerFns[hd](simR,simV,simUart,lcdI2cBuf);}catch(e){}
     }
   }
   runLoop();updateHW();
@@ -1120,7 +1183,7 @@ function onAdc(val){
   if(!simR)return;
   simR.ADC1.DR=parseInt(val);
   if(simR.ADC1.CR1&(1<<5)&&simHandlerFns['ADC_IRQHandler']){
-    simR.ADC1.SR|=2;try{simHandlerFns['ADC_IRQHandler'](simR,simV,simUart);}catch(e){}}
+    simR.ADC1.SR|=2;try{simHandlerFns['ADC_IRQHandler'](simR,simV,simUart,lcdI2cBuf);}catch(e){}}
   runLoop();updateHW();
 }
 
