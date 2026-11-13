@@ -1,0 +1,970 @@
+<title>STM32 Practice Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700;900&display=swap">
+<style>.CodeMirror{font-family:monospace;height:300px;color:#000;direction:ltr}.CodeMirror-lines{padding:4px 0}.CodeMirror pre.CodeMirror-line,.CodeMirror pre.CodeMirror-line-like{padding:0 4px}.CodeMirror-gutter-filler,.CodeMirror-scrollbar-filler{background-color:#fff}.CodeMirror-gutters{border-right:1px solid #ddd;background-color:#f7f7f7;white-space:nowrap}.CodeMirror-linenumber{padding:0 3px 0 5px;min-width:20px;text-align:right;color:#999;white-space:nowrap}.CodeMirror-guttermarker{color:#000}.CodeMirror-guttermarker-subtle{color:#999}.CodeMirror-cursor{border-left:1px solid #000;border-right:none;width:0}.CodeMirror div.CodeMirror-secondarycursor{border-left:1px solid silver}.cm-fat-cursor .CodeMirror-cursor{width:auto;border:0!important;background:#7e7}.cm-fat-cursor div.CodeMirror-cursors{z-index:1}.cm-tab{display:inline-block;text-decoration:inherit}.CodeMirror{position:relative;overflow:hidden;background:#fff}.CodeMirror-scroll{overflow:scroll!important;margin-bottom:-50px;margin-right:-50px;padding-bottom:50px;height:100%;outline:0;position:relative;z-index:0}.CodeMirror-sizer{position:relative;border-right:50px solid transparent}.CodeMirror-gutter-filler,.CodeMirror-hscrollbar,.CodeMirror-scrollbar-filler,.CodeMirror-vscrollbar{position:absolute;z-index:6;display:none;outline:0}.CodeMirror-vscrollbar{right:0;top:0;overflow-x:hidden;overflow-y:scroll}.CodeMirror-hscrollbar{bottom:0;left:0;overflow-y:hidden;overflow-x:scroll}.CodeMirror-scrollbar-filler{right:0;bottom:0}.CodeMirror-gutter-filler{left:0;bottom:0}.CodeMirror-gutters{position:absolute;left:0;top:0;min-height:100%;z-index:3}.CodeMirror-gutter{white-space:normal;height:100%;display:inline-block;vertical-align:top;margin-bottom:-50px}.CodeMirror-gutter-wrapper{position:absolute;z-index:4;background:0 0!important;border:none!important}.CodeMirror-gutter-background{position:absolute;top:0;bottom:0;z-index:4}.CodeMirror-gutter-elt{position:absolute;cursor:default;z-index:4}.CodeMirror-gutter-wrapper ::selection{background-color:transparent}.CodeMirror-lines{cursor:text;min-height:1px}.CodeMirror pre.CodeMirror-line,.CodeMirror pre.CodeMirror-line-like{border-radius:0;border-width:0;background:0 0;font-family:inherit;font-size:inherit;margin:0;white-space:pre;word-wrap:normal;line-height:inherit;color:inherit;z-index:2;position:relative;overflow:visible}.CodeMirror-wrap pre.CodeMirror-line,.CodeMirror-wrap pre.CodeMirror-line-like{word-wrap:break-word;white-space:pre-wrap;word-break:normal}.CodeMirror-linebackground{position:absolute;left:0;right:0;top:0;bottom:0;z-index:0}.CodeMirror-linewidget{position:relative;z-index:2;padding:.1px}.CodeMirror-code{outline:0}.CodeMirror-gutter,.CodeMirror-gutters,.CodeMirror-linenumber,.CodeMirror-scroll,.CodeMirror-sizer{box-sizing:content-box}.CodeMirror-measure{position:absolute;width:100%;height:0;overflow:hidden;visibility:hidden}.CodeMirror-cursor{position:absolute;pointer-events:none}.CodeMirror-measure pre{position:static}div.CodeMirror-cursors{visibility:hidden;position:relative;z-index:3}div.CodeMirror-dragcursors{visibility:visible}.CodeMirror-focused div.CodeMirror-cursors{visibility:visible}.CodeMirror-selected{background:#d9d9d9}.CodeMirror-focused .CodeMirror-selected{background:#d7d4f0}.CodeMirror-crosshair{cursor:crosshair}.CodeMirror-line::selection,.CodeMirror-line>span::selection,.CodeMirror-line>span>span::selection{background:#d7d4f0}.cm-searching{background-color:rgba(255,255,0,.4)}.cm-force-border{padding-right:.1px}@media print{.CodeMirror div.CodeMirror-cursors{visibility:hidden}}span.CodeMirror-selectedtext{background:0 0}</style>
+<style>
+:root {
+  --bg:#f3f5f9;--bg-s:#ffffff;--bg-e:#e9ecf2;--fg:#12151c;--fg-m:#555d6e;--fg-d:#848c9e;
+  --ac:#4f46e5;--ac-h:#4338ca;--ac-s:#eef2ff;--ok:#059669;--ok-s:#d1fae5;
+  --err:#dc2626;--err-s:#fee2e2;--wrn:#d97706;--wrn-s:#fef3c7;--info:#0891b2;--info-s:#cffafe;
+  --bd:#d4d9e3;--bd2:#b8bfcc;--r:10px;--rs:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.05),0 1px 2px rgba(0,0,0,.03);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.06),0 2px 4px -2px rgba(0,0,0,.04);
+  --mono:'JetBrains Mono','Consolas',monospace;--body:'Inter',-apple-system,sans-serif;
+  --led-off:#2a2d35;--led-on-r:#ef4444;--led-on-g:#22c55e;--led-on-y:#eab308;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a0c12;--bg-s:#12151e;--bg-e:#1a1d28;--fg:#e0e4ec;--fg-m:#848c9e;--fg-d:#555d6e;
+  --ac:#818cf8;--ac-h:#a5b4fc;--ac-s:#1e1b4b;--ok:#34d399;--ok-s:#064e3b;
+  --err:#f87171;--err-s:#450a0a;--wrn:#fbbf24;--wrn-s:#451a03;--info:#22d3ee;--info-s:#083344;
+  --bd:#252938;--bd2:#353a4d;--shadow:0 1px 3px rgba(0,0,0,.4);--shadow-md:0 4px 8px rgba(0,0,0,.5);
+  --led-off:#3a3d48;color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0a0c12;--bg-s:#12151e;--bg-e:#1a1d28;--fg:#e0e4ec;--fg-m:#848c9e;--fg-d:#555d6e;
+  --ac:#818cf8;--ac-h:#a5b4fc;--ac-s:#1e1b4b;--ok:#34d399;--ok-s:#064e3b;
+  --err:#f87171;--err-s:#450a0a;--wrn:#fbbf24;--wrn-s:#451a03;--info:#22d3ee;--info-s:#083344;
+  --bd:#252938;--bd2:#353a4d;--shadow:0 1px 3px rgba(0,0,0,.4);--shadow-md:0 4px 8px rgba(0,0,0,.5);
+  --led-off:#3a3d48;color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+html{height:100%}
+
+/* ===== GATE ===== */
+.gate{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);
+  padding:20px;overflow-y:auto}
+.gate-card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:40px 36px;
+  max-width:420px;width:100%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,0,0,.5)}
+.gate-chip{display:inline-block;font-family:var(--mono);font-weight:700;font-size:11px;
+  padding:6px 14px;background:linear-gradient(135deg,#1e293b,#0f172a);color:#94a3b8;
+  border-radius:4px;letter-spacing:.12em;border:1px solid #475569;margin-bottom:20px;text-transform:uppercase}
+.gate-card h1{font-size:22px;font-weight:800;color:#f1f5f9;margin:0 0 6px;letter-spacing:-.02em}
+.gate-card h1 span{background:linear-gradient(135deg,#818cf8,#c084fc);-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+.gate-sub{font-size:13px;color:#94a3b8;margin:0 0 24px;line-height:1.5}
+.gate-tabs{display:flex;gap:0;background:#0f172a;border-radius:8px;padding:3px;margin-bottom:20px}
+.gate-tab{flex:1;font-family:var(--body);font-size:12px;font-weight:600;padding:8px;
+  background:none;border:none;color:#64748b;cursor:pointer;border-radius:6px;transition:all .2s}
+.gate-tab.active{background:#334155;color:#f1f5f9}
+.gate-panel{display:none}.gate-panel.active{display:block}
+.gate-repo{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#0f172a;
+  border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:12px;font-weight:600;
+  text-decoration:none;margin-bottom:16px;transition:border-color .2s}
+.gate-repo:hover{border-color:#818cf8}
+.gate-repo svg{width:18px;height:18px;fill:#e2e8f0}
+.gate-steps{display:flex;gap:12px;justify-content:center;margin-bottom:20px}
+.gate-step{display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8;font-weight:500}
+.gate-step .num{width:22px;height:22px;border-radius:50%;background:#334155;color:#e2e8f0;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.gate-input{width:100%;font-family:var(--body);font-size:13px;padding:10px 14px;
+  background:#0f172a;border:1px solid #334155;border-radius:8px;color:#f1f5f9;
+  outline:none;transition:border-color .2s;margin-bottom:10px}
+.gate-input:focus{border-color:#818cf8}
+.gate-input::placeholder{color:#475569}
+.gate-btn{width:100%;font-family:var(--body);font-size:13px;font-weight:700;padding:11px;
+  background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:8px;
+  cursor:pointer;transition:opacity .2s;letter-spacing:.02em}
+.gate-btn:hover{opacity:.9}
+.gate-btn:disabled{opacity:.5;cursor:not-allowed}
+.gate-status{margin-top:12px;font-size:12px;padding:8px 12px;border-radius:6px;display:none;line-height:1.4}
+.gate-status.show{display:block}
+.gate-status.ok{background:#064e3b;color:#6ee7b7}
+.gate-status.err{background:#450a0a;color:#fca5a5}
+.gate-status.info{background:#0c4a6e;color:#7dd3fc}
+.gate-code-display{margin-top:12px;padding:12px;background:#0f172a;border:1px solid #334155;border-radius:8px}
+.gate-code-display .label{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.gate-code-display .code{font-family:var(--mono);font-size:20px;font-weight:700;color:#818cf8;letter-spacing:.15em}
+.gate-or{color:#475569;font-size:11px;margin:12px 0;font-weight:500}
+
+/* ===== HEADER ===== */
+.hd{display:flex;align-items:center;gap:10px;padding:10px 0 8px;flex-shrink:0;flex-wrap:wrap}
+.hd-logo{display:flex;align-items:center;gap:8px}
+.hd-icon{width:28px;height:28px;background:var(--ac);border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-family:var(--mono);font-size:9px;font-weight:700;color:#fff;letter-spacing:.04em}
+.hd h1{font-size:15px;font-weight:700;margin:0;letter-spacing:-.02em}
+.hd h1 span{color:var(--ac)}
+.chip{font-size:10px;color:var(--fg-d);padding:3px 8px;background:var(--bg-e);border-radius:var(--rs);
+  font-weight:500;border:1px solid var(--bd)}
+.hd-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+.gh-link{font-size:10px;color:var(--fg-d);text-decoration:none;display:flex;align-items:center;gap:4px;
+  padding:3px 8px;border:1px solid var(--bd);border-radius:var(--rs);transition:border-color .2s}
+.gh-link:hover{border-color:var(--ac);color:var(--ac)}
+.gh-link svg{width:14px;height:14px;fill:currentColor}
+
+/* ===== MAIN LAYOUT ===== */
+.main{display:flex;gap:8px;flex:1;min-height:0}
+.left{flex:3;display:flex;flex-direction:column;min-width:0;gap:6px}
+.right{flex:2;display:flex;flex-direction:column;min-width:0;min-height:0;
+  background:var(--bg-s);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+
+/* ===== EDITOR ===== */
+.ed-wrap{flex:1;min-height:0;border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:12.5px!important;
+  line-height:1.55!important;background:var(--bg-s)!important}
+.CodeMirror-gutters{background:var(--bg-e)!important;border-right:1px solid var(--bd)!important}
+.CodeMirror-linenumber{color:var(--fg-d)!important;font-size:10.5px!important}
+.CodeMirror-cursor{border-left-color:var(--ac)!important}
+.CodeMirror-selected{background:var(--ac-s)!important}
+.cm-s-default .cm-keyword{color:#c678dd}.cm-s-default .cm-def{color:#61afef}
+.cm-s-default .cm-variable{color:var(--fg)}.cm-s-default .cm-variable-2{color:#e5c07b}
+.cm-s-default .cm-number{color:#d19a66}.cm-s-default .cm-string{color:#98c379}
+.cm-s-default .cm-comment{color:var(--fg-d);font-style:italic}
+.cm-s-default .cm-operator{color:#56b6c2}.cm-s-default .cm-meta{color:#61afef}
+.cm-s-default .cm-property{color:#e06c75}
+
+/* ===== TOOLBAR ===== */
+.tb{display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap}
+.btn{font-family:var(--body);font-size:11.5px;font-weight:600;padding:7px 14px;
+  border:none;border-radius:var(--rs);cursor:pointer;display:flex;align-items:center;gap:5px;
+  transition:all .15s;box-shadow:var(--shadow)}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.btn:active{transform:translateY(0)}
+.btn-p{background:var(--ac);color:#fff}
+.btn-p:hover{background:var(--ac-h)}
+.btn-s{background:var(--bg-s);color:var(--fg);border:1px solid var(--bd)}
+
+/* ===== HARDWARE PANEL ===== */
+.hw{background:var(--bg-s);border:1px solid var(--bd);border-radius:var(--r);padding:10px 14px;
+  flex-shrink:0;box-shadow:var(--shadow)}
+.hw-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--fg-d);margin-bottom:8px}
+.hw-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hw-grp{display:flex;align-items:center;gap:8px}
+.hw-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--fg-d);
+  writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono)}
+.led-row{display:flex;gap:12px}
+.led-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.led{width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);background:var(--led-off);
+  transition:all .2s;box-shadow:inset 0 1px 3px rgba(0,0,0,.3)}
+.led.on-r{background:var(--led-on-r);box-shadow:0 0 10px var(--led-on-r),0 0 20px rgba(239,68,68,.3),inset 0 -2px 4px rgba(0,0,0,.2)}
+.led.on-g{background:var(--led-on-g);box-shadow:0 0 10px var(--led-on-g),0 0 20px rgba(34,197,94,.3),inset 0 -2px 4px rgba(0,0,0,.2)}
+.led.on-y{background:var(--led-on-y);box-shadow:0 0 10px var(--led-on-y),0 0 20px rgba(234,179,8,.3),inset 0 -2px 4px rgba(0,0,0,.2)}
+.led-tag{font-size:8.5px;font-family:var(--mono);color:var(--fg-d);font-weight:500}
+
+.sw-row{display:flex;gap:12px}
+.sw{display:flex;flex-direction:column;align-items:center;gap:3px}
+.sw-btn{width:36px;height:20px;border-radius:10px;border:1px solid var(--bd2);background:var(--bg-e);cursor:pointer;
+  position:relative;transition:all .25s;box-shadow:inset 0 1px 3px rgba(0,0,0,.1)}
+.sw-btn.on{background:var(--ac);border-color:var(--ac-h);box-shadow:0 0 8px rgba(79,70,229,.3)}
+.sw-btn::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;
+  top:1px;left:1px;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw-btn.on::after{left:17px}
+.sw-tag{font-size:8.5px;font-family:var(--mono);color:var(--fg-d);font-weight:500}
+
+.adc-grp{display:flex;align-items:center;gap:8px}
+.adc-grp input[type=range]{width:90px;accent-color:var(--ac);height:4px}
+.adc-val{font-size:11px;font-family:var(--mono);color:var(--fg-m);min-width:35px;font-weight:500}
+.uart-box{font-family:var(--mono);font-size:11px;background:var(--bg-e);border:1px solid var(--bd);
+  border-radius:var(--rs);padding:4px 8px;min-width:100px;max-width:200px;height:24px;overflow:hidden;
+  white-space:nowrap;color:var(--ok);text-overflow:ellipsis;font-weight:500}
+
+/* ===== TABS ===== */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--bd);flex-shrink:0;padding:0 10px}
+.tab{font-family:var(--body);font-size:11.5px;font-weight:600;padding:10px 12px;
+  background:none;border:none;color:var(--fg-d);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab:hover{color:var(--fg-m)}
+.tab.active{color:var(--ac);border-bottom-color:var(--ac)}
+.tb-body{flex:1;overflow-y:auto;padding:8px 10px;min-height:0}
+.tp{display:none}.tp.active{display:block}
+
+/* ===== FINDINGS ===== */
+.finding{display:flex;align-items:flex-start;gap:7px;padding:6px 10px;font-size:11.5px;
+  border-radius:var(--rs);margin-bottom:3px;transition:background .15s}
+.finding.pass{background:var(--ok-s)}.finding.fail{background:var(--err-s)}
+.finding.warn{background:var(--wrn-s)}.finding.info{background:var(--info-s)}
+.fi{flex-shrink:0;width:16px;text-align:center;font-size:11px;margin-top:1px;font-weight:700}
+.finding.pass .fi{color:var(--ok)}.finding.fail .fi{color:var(--err)}
+.finding.warn .fi{color:var(--wrn)}.finding.info .fi{color:var(--info)}
+.fl{flex:1;line-height:1.4;min-width:0}
+.fh{font-size:10px;color:var(--fg-d);display:block;margin-top:2px;font-family:var(--mono);word-break:break-all}
+.cat-hd{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-d);
+  padding:8px 0 3px;margin-top:4px}
+
+/* ===== SCORE ===== */
+.score{padding:8px 12px;border-radius:var(--rs);margin-bottom:8px;background:var(--bg-e);
+  border:1px solid var(--bd);display:flex;align-items:center;gap:10px}
+.s-track{flex:1;height:5px;background:var(--bd);border-radius:3px;overflow:hidden}
+.s-fill{height:100%;border-radius:3px;transition:width .5s ease-out}
+.s-txt{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ===== CONFIG BLOCKS ===== */
+.cfg-block{background:var(--bg-e);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;
+  margin-bottom:6px;font-size:11.5px}
+.cfg-block h4{margin:0 0 6px;font-size:9.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--fg-m)}
+.cfg-row{display:flex;justify-content:space-between;padding:2px 0;font-family:var(--mono);font-size:11px}
+.cfg-row .k{color:var(--fg-m)}.cfg-row .v{font-weight:600}
+.pin-tbl{width:100%;font-size:10.5px;font-family:var(--mono);border-collapse:collapse}
+.pin-tbl th,.pin-tbl td{padding:3px 6px;border:1px solid var(--bd);text-align:left}
+.pin-tbl th{background:var(--bg-s);font-weight:600;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em}
+
+/* ===== QUESTIONS ===== */
+.q-card{background:var(--bg-s);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;
+  margin-bottom:5px;cursor:pointer;transition:all .15s}
+.q-card:hover{border-color:var(--ac);box-shadow:var(--shadow)}
+.q-card h4{margin:0 0 3px;font-size:11.5px;font-weight:600}
+.q-card .q-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ac);margin-bottom:4px}
+.q-card p{margin:0;font-size:10.5px;color:var(--fg-m);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.q-detail{background:var(--bg-s);border:1px solid var(--bd);border-radius:var(--rs);padding:12px}
+.q-detail h3{margin:0 0 4px;font-size:13px}
+.q-detail .q-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ac);margin-bottom:6px}
+.q-detail p{margin:0 0 8px;font-size:11.5px;line-height:1.45;color:var(--fg-m)}
+.q-detail .q-btns{display:flex;gap:6px}
+.sol-code{font-family:var(--mono);font-size:11px;line-height:1.4;background:var(--bg-e);border:1px solid var(--bd);
+  border-radius:var(--rs);padding:10px;overflow-x:auto;white-space:pre;color:var(--fg);max-height:350px;overflow-y:auto}
+.empty{text-align:center;padding:24px 16px;color:var(--fg-d);font-size:12px;line-height:1.5}
+.back-btn{font-family:var(--body);font-size:10.5px;color:var(--ac);background:none;border:none;cursor:pointer;
+  padding:0 0 6px;font-weight:600}
+.reg-dump{font-family:var(--mono);font-size:10px;line-height:1.35;background:var(--bg-s);border:1px solid var(--bd);
+  border-radius:var(--rs);padding:8px;margin-top:6px;max-height:140px;overflow-y:auto;color:var(--fg-m);white-space:pre}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:700px){
+  .main{flex-direction:column}
+  .left,.right{flex:none}
+  .left{height:55%}.right{height:45%}
+  .hw-row{gap:10px}
+  body{overflow:auto;height:auto}
+  .gate-card{padding:28px 20px}
+  .hd-right{display:none}
+}
+</style>
+
+<!-- ===== GATE SCREEN ===== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-chip">STM32F401CCU6</div>
+    <h1>STM32 <span>Practice Lab</span></h1>
+    <p class="gate-sub">Interactive bare-metal C code analyzer with register simulation and hardware dashboard for Black Pill board</p>
+
+    <div class="gate-tabs">
+      <button class="gate-tab active" onclick="switchGateTab('verify')">Verify via GitHub</button>
+      <button class="gate-tab" onclick="switchGateTab('code')">Enter Code</button>
+    </div>
+
+    <div class="gate-panel active" id="gt-verify">
+      <div class="gate-steps">
+        <div class="gate-step"><span class="num">1</span> Star the repo</div>
+        <div class="gate-step"><span class="num">2</span> Fork it</div>
+        <div class="gate-step"><span class="num">3</span> Verify below</div>
+      </div>
+      <a class="gate-repo" id="gate-repo-link" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span id="gate-repo-name">Loading...</span>
+      </a>
+      <input class="gate-input" id="gh-username" type="text" placeholder="Your GitHub username" autocomplete="off"
+        onkeydown="if(event.key==='Enter')verifyGH()">
+      <button class="gate-btn" id="verify-btn" onclick="verifyGH()">Verify &amp; Unlock</button>
+      <div class="gate-status" id="gate-status"></div>
+      <div class="gate-code-display" id="gate-code-box" style="display:none">
+        <div class="label">Your Access Code</div>
+        <div class="code" id="gate-code-val"></div>
+      </div>
+    </div>
+
+    <div class="gate-panel" id="gt-code">
+      <p style="font-size:12px;color:#94a3b8;margin:0 0 12px;line-height:1.4">Already have a code? Enter your username and code to unlock.</p>
+      <input class="gate-input" id="code-username" type="text" placeholder="Your GitHub username" autocomplete="off">
+      <input class="gate-input" id="code-input" type="text" placeholder="Access code (e.g. ES-A1B2C3)" autocomplete="off"
+        onkeydown="if(event.key==='Enter')enterCode()">
+      <button class="gate-btn" onclick="enterCode()">Unlock</button>
+      <div class="gate-status" id="code-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<div id="app" hidden>
+  <div class="hd">
+    <div class="hd-logo">
+      <div class="hd-icon">MCU</div>
+      <h1>STM32 <span>Practice Lab</span></h1>
+    </div>
+    <div class="chip">Black Pill F401CCU6</div>
+    <div class="hd-right">
+      <a class="gh-link" id="app-gh-link" href="#" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+  </div>
+  <div class="main">
+    <div class="left">
+      <div class="ed-wrap"><textarea id="ed"></textarea></div>
+      <div class="tb">
+        <button class="btn btn-p" onclick="runAll()">&#9654; Analyze &amp; Simulate</button>
+        <button class="btn btn-s" onclick="editor.setValue(TEMPLATE)">&#8634; Reset</button>
+      </div>
+      <div class="hw" id="hw-panel">
+        <div class="hw-title">Hardware Dashboard</div>
+        <div class="hw-row">
+          <div class="hw-grp">
+            <span class="hw-lbl">LED</span>
+            <div class="led-row">
+              <div class="led-col"><div class="led" id="led-pc13"></div><div class="led-tag">PC13</div></div>
+              <div class="led-col"><div class="led" id="led-pc14"></div><div class="led-tag">PC14</div></div>
+              <div class="led-col"><div class="led" id="led-pb9"></div><div class="led-tag">PB9</div></div>
+            </div>
+          </div>
+          <div class="hw-grp">
+            <span class="hw-lbl">SW</span>
+            <div class="sw-row">
+              <div class="sw"><div class="sw-btn" id="sw-pa0" onclick="togSw('A',0)"></div><div class="sw-tag">PA0</div></div>
+              <div class="sw"><div class="sw-btn" id="sw-pa6" onclick="togSw('A',6)"></div><div class="sw-tag">PA6</div></div>
+              <div class="sw"><div class="sw-btn" id="sw-pb10" onclick="togSw('B',10)"></div><div class="sw-tag">PB10</div></div>
+            </div>
+          </div>
+          <div class="hw-grp adc-grp">
+            <span class="hw-lbl">ADC</span>
+            <input type="range" id="adc-slider" min="0" max="4095" value="0" oninput="onAdc(this.value)">
+            <span class="adc-val" id="adc-val">0</span>
+          </div>
+          <div class="hw-grp">
+            <span class="hw-lbl">TX</span>
+            <div class="uart-box" id="uart-out">&mdash;</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="tabs">
+        <button class="tab active" data-t="analysis">Analysis</button>
+        <button class="tab" data-t="regs">Registers</button>
+        <button class="tab" data-t="board">Board Ref</button>
+        <button class="tab" data-t="questions">Questions</button>
+      </div>
+      <div class="tb-body">
+        <div class="tp active" id="p-analysis"><div class="empty">Write any STM32 bare-metal C code and click <b>Analyze &amp; Simulate</b> to see register analysis, clock checks, and interactive hardware output.</div></div>
+        <div class="tp" id="p-regs"><div class="empty">Run analysis to see register state.</div></div>
+        <div class="tp" id="p-board"></div>
+        <div class="tp" id="p-questions"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script>
+// ========================================
+// CONFIGURATION - UPDATE THESE FOR YOUR REPO
+// ========================================
+var REPO_OWNER = 'GVR2007';
+var REPO_NAME = 'ES';
+
+// ===== GATE LOGIC =====
+function getRepoUrl(){return 'https://github.com/'+REPO_OWNER+'/'+REPO_NAME;}
+function setupGateLinks(){
+  var url=getRepoUrl();
+  document.getElementById('gate-repo-link').href=url;
+  document.getElementById('gate-repo-name').textContent=REPO_OWNER+'/'+REPO_NAME;
+  document.getElementById('app-gh-link').href=url;
+}
+function switchGateTab(tab){
+  document.querySelectorAll('.gate-tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.gate-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelector('.gate-tab[onclick*="'+tab+'"]').classList.add('active');
+  document.getElementById('gt-'+tab).classList.add('active');
+}
+function showGateStatus(id,msg,type){
+  var el=document.getElementById(id);
+  el.textContent=msg;el.className='gate-status show '+type;
+}
+function generateCode(username){
+  var str=username.toLowerCase()+':stm32-es-lab-2026';
+  var h=5381;
+  for(var i=0;i<str.length;i++){h=((h<<5)+h)+str.charCodeAt(i);h=h&h;}
+  return 'ES-'+Math.abs(h).toString(36).toUpperCase().substring(0,6);
+}
+function verifyGH(){
+  var username=document.getElementById('gh-username').value.trim();
+  if(!username){showGateStatus('gate-status','Enter your GitHub username','err');return;}
+  var btn=document.getElementById('verify-btn');
+  btn.disabled=true;btn.textContent='Checking...';
+  showGateStatus('gate-status','Verifying star and fork...','info');
+  var apiBase='https://api.github.com/repos/'+REPO_OWNER+'/'+REPO_NAME;
+  Promise.all([
+    fetch(apiBase+'/stargazers?per_page=100').then(function(r){if(!r.ok)throw new Error('Repo not found ('+r.status+')');return r.json();}),
+    fetch(apiBase+'/forks?per_page=100').then(function(r){return r.json();})
+  ]).then(function(results){
+    var stargazers=results[0],forks=results[1];
+    var hasStarred=stargazers.some(function(u){return u.login.toLowerCase()===username.toLowerCase();});
+    var hasForked=Array.isArray(forks)&&forks.some(function(f){return f.owner&&f.owner.login.toLowerCase()===username.toLowerCase();});
+    if(hasStarred&&hasForked){
+      var code=generateCode(username);
+      showGateStatus('gate-status','Verified! Save your code below.','ok');
+      document.getElementById('gate-code-box').style.display='block';
+      document.getElementById('gate-code-val').textContent=code;
+      try{localStorage.setItem('es-lab-user',username);localStorage.setItem('es-lab-code',code);}catch(e){}
+      setTimeout(function(){unlockApp();},2000);
+    }else{
+      var missing=[];
+      if(!hasStarred)missing.push('Star');
+      if(!hasForked)missing.push('Fork');
+      showGateStatus('gate-status','Please '+missing.join(' and ')+' the repo first, then try again.','err');
+    }
+    btn.disabled=false;btn.textContent='Verify & Unlock';
+  }).catch(function(e){
+    showGateStatus('gate-status','Error: '+e.message+'. Make sure the repo exists and is public.','err');
+    btn.disabled=false;btn.textContent='Verify & Unlock';
+  });
+}
+function enterCode(){
+  var username=document.getElementById('code-username').value.trim();
+  var code=document.getElementById('code-input').value.trim().toUpperCase();
+  if(!username||!code){showGateStatus('code-status','Enter both username and code','err');return;}
+  var expected=generateCode(username);
+  if(code===expected){
+    try{localStorage.setItem('es-lab-user',username);localStorage.setItem('es-lab-code',code);}catch(e){}
+    showGateStatus('code-status','Code valid! Unlocking...','ok');
+    setTimeout(function(){unlockApp();},800);
+  }else{
+    showGateStatus('code-status','Invalid code for this username','err');
+  }
+}
+function unlockApp(){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').hidden=false;
+  initEditor();
+}
+function checkAccess(){
+  setupGateLinks();
+  try{
+    var user=localStorage.getItem('es-lab-user');
+    var code=localStorage.getItem('es-lab-code');
+    if(user&&code&&generateCode(user)===code){unlockApp();return;}
+  }catch(e){}
+}
+checkAccess();
+
+// ===== TEMPLATE & DATA =====
+var TEMPLATE='#include "stm32f4xx.h"\n\nint main(void) {\n    // Enable clocks\n\n    // Configure GPIOs\n\n    while (1) {\n\n    }\n}';
+var CLK={A:0,B:1,C:2};
+var BOARD_PINS=[{p:'A',n:0,fn:'User KEY / ADC_IN0'},{p:'A',n:1,fn:'ADC_IN1 / LDR'},{p:'A',n:2,fn:'USART2_TX (AF7)'},{p:'A',n:3,fn:'USART2_RX (AF7)'},{p:'A',n:6,fn:'Switch S2 / EXTI6'},{p:'B',n:6,fn:'I2C1_SCL (AF4)'},{p:'B',n:7,fn:'I2C1_SDA (AF4)'},{p:'B',n:9,fn:'LED 2'},{p:'B',n:10,fn:'Switch S1 / EXTI10'},{p:'C',n:13,fn:'User LED (on-board)'},{p:'C',n:14,fn:'LED 1'}];
+function extiIRQ(l){if(l<=4)return[6,7,8,9,10][l];if(l<=9)return 23;return 40;}
+function extiHandler(l){if(l<=4)return'EXTI'+l+'_IRQHandler';if(l<=9)return'EXTI9_5_IRQHandler';return'EXTI15_10_IRQHandler';}
+
+// ===== BIT-ACCURATE EXPRESSION EVALUATOR =====
+function evalBit(s){
+  s=s.trim().replace(/[Uu]\b/g,'');
+  var p=0,len=s.length;
+  function ws(){while(p<len&&s[p]===' ')p++;}
+  function pOr(){var v=pXor();while(true){ws();if(p<len&&s[p]==='|'&&s[p+1]!=='|'){p++;v=(v|pXor())>>>0;}else break;}return v;}
+  function pXor(){var v=pAnd();while(true){ws();if(p<len&&s[p]==='^'){p++;v=(v^pAnd())>>>0;}else break;}return v;}
+  function pAnd(){var v=pShift();while(true){ws();if(p<len&&s[p]==='&'&&s[p+1]!=='&'){p++;v=(v&pShift())>>>0;}else break;}return v;}
+  function pShift(){var v=pAdd();while(true){ws();if(p+1<len&&s[p]==='<'&&s[p+1]==='<'){p+=2;v=(v<<pAdd())>>>0;}else if(p+1<len&&s[p]==='>'&&s[p+1]==='>'){p+=2;v=(v>>>pAdd())>>>0;}else break;}return v;}
+  function pAdd(){var v=pMul();while(true){ws();if(p<len&&s[p]==='+'&&s[p+1]!=='+'){p++;v=(v+pMul())>>>0;}else if(p<len&&s[p]==='-'&&s[p+1]!=='-'){p++;v=(v-pMul())>>>0;}else break;}return v;}
+  function pMul(){var v=pUn();while(true){ws();if(p<len&&s[p]==='*'){p++;v=Math.imul(v,pUn())>>>0;}else break;}return v;}
+  function pUn(){ws();if(p<len&&s[p]==='~'){p++;return(~pUn())>>>0;}if(p<len&&s[p]==='-'&&(p===0||!/\d/.test(s[p-1]))){p++;return(-pUn())>>>0;}return pPri();}
+  function pPri(){ws();if(p<len&&s[p]==='('){p++;var v=pOr();ws();if(p<len&&s[p]===')')p++;return v;}
+    var st=p;
+    if(p+1<len&&s[p]==='0'&&(s[p+1]==='x'||s[p+1]==='X')){p+=2;while(p<len&&/[0-9a-fA-F]/.test(s[p]))p++;return parseInt(s.substring(st,p))>>>0;}
+    while(p<len&&/[0-9]/.test(s[p]))p++;
+    if(p>st)return parseInt(s.substring(st,p))>>>0;
+    while(p<len&&/[a-zA-Z_]/.test(s[p]))p++;
+    return 0;
+  }
+  try{return pOr();}catch(e){return 0;}
+}
+
+// ===== REGISTER STATE ENGINE =====
+function initRegs(){
+  return{
+    RCC:{AHB1ENR:0,APB1ENR:0,APB2ENR:0},
+    GPIOA:{MODER:0,PUPDR:0,ODR:0,IDR:0xFFFF,BSRR:0,OTYPER:0,OSPEEDR:0,AFR:[0,0]},
+    GPIOB:{MODER:0,PUPDR:0,ODR:0,IDR:0xFFFF,BSRR:0,OTYPER:0,OSPEEDR:0,AFR:[0,0]},
+    GPIOC:{MODER:0,PUPDR:0,ODR:0,IDR:0xFFFF,BSRR:0,OTYPER:0,OSPEEDR:0,AFR:[0,0]},
+    USART2:{BRR:0,CR1:0,CR2:0,CR3:0,SR:0xC0,DR:0},
+    ADC1:{CR1:0,CR2:0,SR:0x10,DR:0,SQR1:0,SQR3:0,SMPR2:0},
+    ADC:{CCR:0},
+    EXTI:{IMR:0,EMR:0,FTSR:0,RTSR:0,PR:0},
+    SYSCFG:{EXTICR:[0,0,0,0]},
+    SysTick:{LOAD:0,VAL:0,CTRL:0},
+    I2C1:{CR1:0,CR2:0,CCR:0,TRISE:0,OAR1:0,SR1:0,SR2:0},
+    NVIC:{ISER:[0,0,0]}
+  };
+}
+
+function applyOp(cur,op,val){
+  if(op==='=')return val>>>0;
+  if(op==='|=')return(cur|val)>>>0;
+  if(op==='&=')return(cur&val)>>>0;
+  if(op==='^=')return(cur^val)>>>0;
+  return cur;
+}
+
+function execRegStmt(s,R){
+  s=s.trim();var m;
+  m=s.match(/NVIC_EnableIRQ\s*\(\s*(\w+)\s*\)/);
+  if(m){var map={EXTI0_IRQn:6,EXTI1_IRQn:7,EXTI2_IRQn:8,EXTI3_IRQn:9,EXTI4_IRQn:10,EXTI9_5_IRQn:23,EXTI15_10_IRQn:40,ADC_IRQn:18,USART2_IRQn:38};
+    var n=map[m[1]];if(n!==undefined){if(n<32)R.NVIC.ISER[0]=(R.NVIC.ISER[0]|(1<<n))>>>0;else R.NVIC.ISER[1]=(R.NVIC.ISER[1]|(1<<(n-32)))>>>0;}return true;}
+  m=s.match(/GPIO([ABC])\s*->\s*AFR\s*\[\s*(\d+)\s*\]\s*([|&^]?=)\s*([\s\S]*)/);
+  if(m){var idx=parseInt(m[2]);R['GPIO'+m[1]].AFR[idx]=applyOp(R['GPIO'+m[1]].AFR[idx],m[3],evalBit(m[4]));return true;}
+  m=s.match(/SYSCFG\s*->\s*EXTICR\s*\[\s*(\d+)\s*\]\s*([|&^]?=)\s*([\s\S]*)/);
+  if(m){var idx=parseInt(m[1]);R.SYSCFG.EXTICR[idx]=applyOp(R.SYSCFG.EXTICR[idx],m[2],evalBit(m[3]));return true;}
+  m=s.match(/NVIC\s*->\s*ISER\s*\[\s*(\d+)\s*\]\s*([|&^]?=)\s*([\s\S]*)/);
+  if(m){var idx=parseInt(m[1]);R.NVIC.ISER[idx]=applyOp(R.NVIC.ISER[idx],m[2],evalBit(m[3]));return true;}
+  var periphs=[
+    [/^GPIO([ABC])\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['GPIO'+m[1],m[2],m[3],m[4]];}],
+    [/^RCC\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['RCC',m[1],m[2],m[3]];}],
+    [/^USART2\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['USART2',m[1],m[2],m[3]];}],
+    [/^ADC1\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['ADC1',m[1],m[2],m[3]];}],
+    [/^ADC\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['ADC',m[1],m[2],m[3]];}],
+    [/^EXTI\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['EXTI',m[1],m[2],m[3]];}],
+    [/^SysTick\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['SysTick',m[1],m[2],m[3]];}],
+    [/^I2C1\s*->\s*(\w+)\s*([|&^]?=)\s*([\s\S]*)/,function(m){return['I2C1',m[1],m[2],m[3]];}],
+  ];
+  for(var i=0;i<periphs.length;i++){
+    m=s.match(periphs[i][0]);
+    if(m){var p=periphs[i][1](m);var obj=R[p[0]];if(!obj)return false;
+      if(!(p[1] in obj))obj[p[1]]=0;
+      obj[p[1]]=applyOp(obj[p[1]],p[2],evalBit(p[3]));return true;}
+  }
+  return false;
+}
+
+function stripC(c){return c.replace(/\/\/.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,'');}
+
+function findBlock(code,startIdx){
+  var i=startIdx;while(i<code.length&&code[i]!=='{')i++;
+  if(i>=code.length)return'';
+  var depth=1,bstart=i;i++;
+  while(i<code.length&&depth>0){if(code[i]==='{')depth++;if(code[i]==='}')depth--;i++;}
+  return code.substring(bstart+1,i-1);
+}
+
+function extractFunctions(code){
+  var fns={},re=/\b(\w+)\s*\([^)]*\)\s*\{/g,m;
+  while((m=re.exec(code))!==null){
+    if(/^(if|while|for|switch|else)$/.test(m[1]))continue;
+    fns[m[1]]=findBlock(code,m.index);
+  }
+  return fns;
+}
+
+function execSetup(code,R){
+  var clean=stripC(code);
+  var fns=extractFunctions(clean);
+  var mainBody=fns['main']||'';
+  var loopMatch=mainBody.match(/while\s*\(\s*1\s*\)|for\s*\(\s*;\s*;\s*\)/);
+  var setup=loopMatch?mainBody.substring(0,loopMatch.index):mainBody;
+  function execBlock(body,depth){
+    if(depth>8)return;
+    body.split(';').forEach(function(s){s=s.trim();if(!s)return;
+      if(!execRegStmt(s,R)){
+        var fc=s.match(/\b(\w+)\s*\(/);
+        if(fc&&fns[fc[1]]&&fc[1]!=='main')execBlock(fns[fc[1]],depth+1);
+      }
+    });
+  }
+  execBlock(setup,0);
+  var loopBody='';
+  if(loopMatch){
+    var afterLoop=mainBody.substring(loopMatch.index);
+    var bi=afterLoop.indexOf('{');
+    if(bi>=0)loopBody=findBlock(afterLoop,bi);
+  }
+  return{fns:fns,loopBody:loopBody};
+}
+
+// ===== LOOP SIMULATION VIA C-TO-JS =====
+var declV={};
+
+function skipBalancedParen(code,start){
+  if(code[start]!=='(')return start;
+  var d=1,i=start+1;
+  while(i<code.length&&d>0){if(code[i]==='(')d++;if(code[i]===')')d--;i++;}
+  return i;
+}
+function stripBusyWaits(js){
+  var out='',i=0;
+  while(i<js.length){
+    var sub=js.substring(i);
+    var wm=sub.match(/^(while|for)\s*\(/);
+    if(wm){
+      var pstart=i+wm[0].length-1;
+      var pend=skipBalancedParen(js,pstart);
+      var rest=js.substring(pend);
+      var bw=rest.match(/^\s*(;|\{\s*;?\s*\})/);
+      if(bw){i=pend+bw[0].length;continue;}
+    }
+    out+=js[i];i++;
+  }
+  return out;
+}
+function cToJs(code,fns){
+  var js=code;
+  js=js.replace(/\b(__NOP|__WFI|__DSB|__ISB|__DMB)\s*\(\s*\)/g,'');
+  js=js.replace(/\b(sprintf|printf|snprintf|delay_ms|delay|HAL_Delay)\s*\([^;]*\)/g,'');
+  js=js.replace(/\(\s*void\s*\)\s*\w[^;]*/g,'');
+  js=js.replace(/GPIO([ABC])\s*->\s*AFR\s*\[\s*(\d+)\s*\]/g,'R.GPIO$1.AFR[$2]');
+  js=js.replace(/GPIO([ABC])\s*->\s*(\w+)/g,'R.GPIO$1.$2');
+  js=js.replace(/SYSCFG\s*->\s*EXTICR\s*\[\s*(\d+)\s*\]/g,'R.SYSCFG.EXTICR[$1]');
+  js=js.replace(/RCC\s*->\s*(\w+)/g,'R.RCC.$1');
+  js=js.replace(/USART2\s*->\s*(\w+)/g,'R.USART2.$1');
+  js=js.replace(/ADC1\s*->\s*(\w+)/g,'R.ADC1.$1');
+  js=js.replace(/ADC\s*->\s*(\w+)/g,'R.ADC.$1');
+  js=js.replace(/EXTI\s*->\s*(\w+)/g,'R.EXTI.$1');
+  js=js.replace(/SysTick\s*->\s*(\w+)/g,'R.SysTick.$1');
+  js=js.replace(/I2C1\s*->\s*(\w+)/g,'R.I2C1.$1');
+  js=js.replace(/NVIC\s*->\s*ISER\s*\[\s*(\d+)\s*\]/g,'R.NVIC.ISER[$1]');
+  js=stripBusyWaits(js);
+  js=js.replace(/\b(?:volatile\s+)?(?:int|uint8_t|uint16_t|uint32_t|const\s+int|char)\s+(\w+)/g,function(_,n){declV[n]=true;return'V.'+n;});
+  js=js.replace(/(\d)[Uu]\b/g,'$1');
+  js=js.replace(/'([\x20-\x7E])'/g,function(_,ch){return ch.charCodeAt(0);});
+  js=js.replace(/'\\r'/g,'13');js=js.replace(/'\\n'/g,'10');js=js.replace(/'\\0'/g,'0');
+  for(var v in declV){if(v==='main'||v==='void')continue;js=js.replace(new RegExp('(?<![.\\w])'+v+'(?!\\w)','g'),'V.'+v);}
+  js=js.replace(/(R\.USART2\.DR\s*=\s*)([^;]+)/g,'$1$2;UART.push($2&0xFF)');
+  if(fns){for(var fn in fns){if(fn==='main')continue;
+    var fb=cToJs(fns[fn],null);
+    var re=new RegExp('\\b'+fn+'\\s*\\(','g'),fm;
+    while((fm=re.exec(js))!==null){
+      var pe=skipBalancedParen(js,fm.index+fm[0].length-1);
+      js=js.substring(0,fm.index)+'{'+fb+'}'+js.substring(pe);
+      re.lastIndex=fm.index+fb.length+2;
+    }
+  }}
+  return js;
+}
+
+function buildFn(body,fns){
+  try{declV={};var js=cToJs(body,fns);
+  js=js.replace(/\bfor\s*\(\s*V\.\w+\s*=[^;]*;[^;]*;[^)]*\)\s*\{[^}]*\}/g,'');
+  return new Function('R','V','UART',js);}catch(e){
+    try{declV={};var js2=cToJs(body,null);
+    js2=js2.replace(/\bfor\s*\(\s*V\.\w+\s*=[^;]*;[^;]*;[^)]*\)\s*\{[^}]*\}/g,'');
+    js2=js2.replace(/\b(?!if\b|else\b|while\b|for\b|var\b|return\b)[a-zA-Z_]\w*\s*\([^)]*\)\s*;?/g,'');
+    return new Function('R','V','UART',js2);}catch(e2){return null;}
+  }
+}
+
+// ===== ANALYSIS FROM REGISTER STATE =====
+function analyzeRegs(R,code){
+  var c=stripC(code),findings=[],config={pins:[],usart:null,adc:null,systick:null,exti:[],i2c:null,handlers:[]};
+  var hasInc=/#include|#define\s*(RCC|GPIO|USART|ADC|EXTI|SysTick|NVIC|I2C|STM32|stm32)/.test(code);
+  var hasMain=/\bmain\s*\(/.test(c);
+  var hasLoop=/while\s*\(\s*1\s*\)|for\s*\(\s*;\s*;\s*\)/.test(c);
+  if(!hasInc)findings.push({s:'error',c:'Structure',m:'Missing #include \u2014 register names undefined',h:'#include "stm32f4xx.h"'});
+  else findings.push({s:'pass',c:'Structure',m:'Header present'});
+  if(!hasMain)findings.push({s:'error',c:'Structure',m:'No main() found'});
+  else findings.push({s:'pass',c:'Structure',m:'main() defined'});
+  if(!hasLoop)findings.push({s:'warn',c:'Structure',m:'No infinite loop',h:'while(1){}'});
+
+  ['A','B','C'].forEach(function(port){
+    if(new RegExp('GPIO'+port+'\\s*->').test(c)){
+      if(R.RCC.AHB1ENR&(1<<CLK[port]))findings.push({s:'pass',c:'Clocks',m:'GPIO'+port+' clock ON (AHB1ENR bit '+CLK[port]+')'});
+      else findings.push({s:'error',c:'Clocks',m:'GPIO'+port+' used, clock OFF (AHB1ENR=0x'+hex(R.RCC.AHB1ENR)+')',h:'RCC->AHB1ENR |= (1 << '+CLK[port]+');'});}});
+  if(/USART2\s*->/.test(c)){
+    if(R.RCC.APB1ENR&(1<<17))findings.push({s:'pass',c:'Clocks',m:'USART2 clock ON'});
+    else findings.push({s:'error',c:'Clocks',m:'USART2 clock OFF',h:'RCC->APB1ENR |= (1 << 17);'});}
+  if(/ADC1?\s*->/.test(c)){
+    if(R.RCC.APB2ENR&(1<<8))findings.push({s:'pass',c:'Clocks',m:'ADC1 clock ON'});
+    else findings.push({s:'error',c:'Clocks',m:'ADC1 clock OFF',h:'RCC->APB2ENR |= (1 << 8);'});}
+  if(/SYSCFG\s*->/.test(c)){
+    if(R.RCC.APB2ENR&(1<<14))findings.push({s:'pass',c:'Clocks',m:'SYSCFG clock ON'});
+    else findings.push({s:'error',c:'Clocks',m:'SYSCFG clock OFF',h:'RCC->APB2ENR |= (1 << 14);'});}
+  if(/I2C1\s*->/.test(c)){
+    if(R.RCC.APB1ENR&(1<<21))findings.push({s:'pass',c:'Clocks',m:'I2C1 clock ON'});
+    else findings.push({s:'error',c:'Clocks',m:'I2C1 clock OFF',h:'RCC->APB1ENR |= (1 << 21);'});}
+
+  ['A','B','C'].forEach(function(port){
+    var moder=R['GPIO'+port].MODER,pupdr=R['GPIO'+port].PUPDR;
+    for(var pin=0;pin<=15;pin++){
+      var mode=(moder>>>(pin*2))&3,pull=(pupdr>>>(pin*2))&3;
+      var used=new RegExp('GPIO'+port+'[^;]*'+pin).test(c)||(mode!==0);
+      if(!used)continue;
+      var ms=['input','output','af','analog'][mode],ps=['none','pull-up','pull-down','reserved'][pull];
+      config.pins.push({port:port,pin:pin,mode:ms,pull:ps,modeN:mode});
+    }});
+  config.pins.forEach(function(p){
+    findings.push({s:'pass',c:'GPIO',m:'P'+p.port+p.pin+' = '+p.mode+(p.pull!=='none'?' ('+p.pull+')':'')});
+    if(p.modeN===0&&p.pull==='none'&&new RegExp('GPIO'+p.port+'\\s*->\\s*IDR').test(c))
+      findings.push({s:'warn',c:'GPIO',m:'P'+p.port+p.pin+' input with no pull \u2014 floating',h:'GPIO'+p.port+'->PUPDR |= (1 << '+(p.pin*2)+');'});
+  });
+
+  if(/USART2\s*->/.test(c)){
+    var brr=R.USART2.BRR,cr1=R.USART2.CR1,over8=!!(cr1&(1<<15));
+    if(brr>0){var baud;
+      if(over8){var ma=(brr>>>4)&0xFFF,fr=brr&0x7;baud=Math.round(16e6/(8*(ma+fr/8)));}
+      else{var ma=(brr>>>4)&0xFFF,fr=brr&0xF;baud=Math.round(16e6/(16*(ma+fr/16)));}
+      config.usart={baud:baud,over8:over8,brrHex:'0x'+hex(brr)};
+      findings.push({s:'info',c:'USART2',m:'BRR=0x'+hex(brr)+' -> ~'+baud+' baud'+(over8?' OVER8':'')});
+    }else findings.push({s:'error',c:'USART2',m:'BRR=0, no baud rate',h:'USART2->BRR = 0x0683;'});
+    if(cr1&(1<<3))findings.push({s:'pass',c:'USART2',m:'TX enabled'});
+    else if(/DR\s*=/.test(c))findings.push({s:'error',c:'USART2',m:'TX not enabled',h:'USART2->CR1 |= (1 << 3);'});
+    if(cr1&(1<<2))findings.push({s:'pass',c:'USART2',m:'RX enabled'});
+    if(cr1&(1<<13))findings.push({s:'pass',c:'USART2',m:'USART2 enabled'});
+    else findings.push({s:'error',c:'USART2',m:'USART2 not enabled (UE=0)',h:'USART2->CR1 |= (1 << 13);'});
+    var pa2m=(R.GPIOA.MODER>>>4)&3;
+    if(pa2m===2)findings.push({s:'pass',c:'USART2',m:'PA2 AF mode'});
+    else findings.push({s:'error',c:'USART2',m:'PA2 MODER='+pa2m+' (need 2)',h:'GPIOA->MODER |= (2 << 4);'});
+    var pa2af=(R.GPIOA.AFR[0]>>>8)&0xF;
+    if(pa2af===7)findings.push({s:'pass',c:'USART2',m:'PA2 AFR=7'});
+    else findings.push({s:'error',c:'USART2',m:'PA2 AFR='+pa2af+' (need 7)',h:'GPIOA->AFR[0] |= (7 << 8);'});
+  }
+
+  if(/ADC1?\s*->/.test(c)){
+    var cr1=R.ADC1.CR1,cr2=R.ADC1.CR2;
+    var res=[12,10,8,6][(cr1>>>24)&3],cont=!!(cr2&2),adon=!!(cr2&1),eocie=!!(cr1&(1<<5)),chan=R.ADC1.SQR3&0x1F;
+    config.adc={res:res,channel:chan,cont:cont,eocie:eocie};
+    findings.push({s:'info',c:'ADC1',m:res+'-bit Ch'+chan+(cont?' continuous':' single')});
+    if(adon)findings.push({s:'pass',c:'ADC1',m:'ADON=1'});else findings.push({s:'error',c:'ADC1',m:'ADC off',h:'ADC1->CR2 |= 1;'});
+    if(eocie){findings.push({s:'pass',c:'ADC1',m:'EOCIE=1'});
+      if(!/ADC_IRQHandler/.test(c))findings.push({s:'error',c:'ADC1',m:'No ADC_IRQHandler'});
+      else{findings.push({s:'pass',c:'ADC1',m:'ADC_IRQHandler defined'});config.handlers.push('ADC_IRQHandler');}
+      if(R.NVIC.ISER[0]&(1<<18))findings.push({s:'pass',c:'ADC1',m:'NVIC IRQ18 ON'});
+      else findings.push({s:'error',c:'ADC1',m:'ADC NVIC off',h:'NVIC->ISER[0] |= (1 << 18);'});}
+    var pp=chan<=7?'A':'B',pn=chan<=7?chan:chan-8,am=(R['GPIO'+pp].MODER>>>(pn*2))&3;
+    if(am===3)findings.push({s:'pass',c:'ADC1',m:'P'+pp+pn+' analog'});
+    else findings.push({s:'error',c:'ADC1',m:'P'+pp+pn+' not analog (MODER='+am+')',h:'GPIO'+pp+'->MODER |= (3 << '+(pn*2)+');'});
+  }
+
+  if(/SysTick\s*->/.test(c)){
+    var load=R.SysTick.LOAD,ctrl=R.SysTick.CTRL;
+    var freq=load>0?16e6/(load+1):0,per=freq>0?1000/freq:0;
+    config.systick={load:load,freq:freq.toFixed(1),periodMs:per.toFixed(0)};
+    if(load>0)findings.push({s:'info',c:'SysTick',m:'LOAD='+load+' -> '+per.toFixed(0)+'ms'});
+    else findings.push({s:'error',c:'SysTick',m:'LOAD=0',h:'SysTick->LOAD = 16000000 - 1;'});
+    if(ctrl&1)findings.push({s:'pass',c:'SysTick',m:'Enabled'});else findings.push({s:'error',c:'SysTick',m:'Not enabled'});
+    if(ctrl&2){findings.push({s:'pass',c:'SysTick',m:'TICKINT=1'});
+      if(!/SysTick_Handler/.test(c))findings.push({s:'error',c:'SysTick',m:'No SysTick_Handler'});
+      else{findings.push({s:'pass',c:'SysTick',m:'SysTick_Handler defined'});config.handlers.push('SysTick_Handler');}}
+  }
+
+  if(R.EXTI.IMR){
+    for(var line=0;line<=15;line++){
+      if(!(R.EXTI.IMR&(1<<line)))continue;
+      var edge=(R.EXTI.FTSR&(1<<line)?'falling':'')+(R.EXTI.RTSR&(1<<line)?((R.EXTI.FTSR&(1<<line))?'+rising':'rising'):'');
+      if(!edge)edge='none';
+      config.exti.push({line:line,edge:edge});
+      findings.push({s:'pass',c:'EXTI',m:'Line '+line+' ('+edge+')'});
+      var irq=extiIRQ(line),hd=extiHandler(line);
+      var nvOk=irq<32?(R.NVIC.ISER[0]&(1<<irq)):(R.NVIC.ISER[1]&(1<<(irq-32)));
+      if(nvOk)findings.push({s:'pass',c:'EXTI',m:'NVIC IRQ'+irq});
+      else findings.push({s:'error',c:'EXTI',m:'NVIC off for line '+line,h:irq<32?'NVIC->ISER[0] |= (1<<'+irq+');':'NVIC->ISER[1] |= (1<<'+(irq-32)+');'});
+      if(new RegExp('void\\s+'+hd+'\\s*\\(').test(c)){findings.push({s:'pass',c:'EXTI',m:hd});config.handlers.push(hd);}
+      else findings.push({s:'error',c:'EXTI',m:hd+' missing'});
+    }
+    if(config.exti.length&&/EXTI\s*->\s*PR\s*[|]?=/.test(c))findings.push({s:'pass',c:'EXTI',m:'PR cleared'});
+    else if(config.exti.length)findings.push({s:'error',c:'EXTI',m:'PR not cleared!',h:'EXTI->PR |= (1 << line);'});
+  }
+
+  if(/I2C1\s*->/.test(c)){
+    if(R.I2C1.CCR)findings.push({s:'pass',c:'I2C1',m:'CCR='+R.I2C1.CCR});else findings.push({s:'error',c:'I2C1',m:'CCR not set',h:'I2C1->CCR = 80;'});
+    if(R.I2C1.TRISE)findings.push({s:'pass',c:'I2C1',m:'TRISE='+R.I2C1.TRISE});else findings.push({s:'error',c:'I2C1',m:'TRISE not set',h:'I2C1->TRISE = 17;'});
+    config.i2c={configured:true};}
+
+  return{findings:findings,config:config};
+}
+
+function hex(v){var h=(v>>>0).toString(16).toUpperCase();while(h.length<4)h='0'+h;return h;}
+
+// ===== SIMULATION STATE =====
+var simR=null,simV={},simLoopFn=null,simHandlerFns={},simFns={},simUart=[],simTickTimer=null,simConfig=null;
+
+function runAll(){
+  simR=initRegs();simV={};simUart=[];declV={};
+  if(simTickTimer){clearInterval(simTickTimer);simTickTimer=null;}
+  document.getElementById('uart-out').textContent='\u2014';
+  var code=editor.getValue();
+  var res=execSetup(code,simR);
+  var analysis=analyzeRegs(simR,code);
+  simConfig=analysis.config;
+  renderFindings(analysis.findings);renderRegDump(simR);
+  simFns=res.fns;syncIDR();
+  simR.ADC1.DR=parseInt(document.getElementById('adc-slider').value)||0;
+  declV={};
+  code.replace(/\b(?:volatile\s+)?(?:int|uint8_t|uint16_t|uint32_t|const\s+int|char)\s+(\w+)/g,function(_,n){if(n!=='main'&&n!=='void')declV[n]=true;});
+  simLoopFn=res.loopBody?buildFn(res.loopBody,simFns):null;
+  simHandlerFns={};
+  for(var fn in simFns){if(/_IRQHandler$/.test(fn)||fn==='SysTick_Handler')simHandlerFns[fn]=buildFn(simFns[fn],simFns);}
+  runLoop();
+  if(simR.SysTick.CTRL&1&&simR.SysTick.LOAD>0){
+    var ms=Math.max(200,Math.round(1000/(16e6/(simR.SysTick.LOAD+1))));
+    if(simR.SysTick.CTRL&2&&simHandlerFns['SysTick_Handler'])
+      simTickTimer=setInterval(function(){try{simHandlerFns['SysTick_Handler'](simR,simV,simUart);}catch(e){}updateHW();},ms);
+  }
+  updateHW();
+  if(simConfig.adc){var mx=[4095,1023,255,63][[12,10,8,6].indexOf(simConfig.adc.res)];document.getElementById('adc-slider').max=mx||4095;}
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.tp').forEach(function(x){x.classList.remove('active');});
+  document.querySelector('[data-t="analysis"]').classList.add('active');
+  document.getElementById('p-analysis').classList.add('active');
+}
+
+function runLoop(){
+  if(!simLoopFn||!simR)return;
+  simR.USART2.SR=0xC0;simR.ADC1.SR|=2;
+  try{simLoopFn(simR,simV,simUart);}catch(e){}
+}
+
+function syncIDR(){
+  if(!simR)return;
+  ['pa0','pa6','pb10'].forEach(function(id){
+    var el=document.getElementById('sw-'+id);if(!el)return;
+    var port=id[1].toUpperCase(),pin=parseInt(id.substring(2));
+    if(el.classList.contains('on'))simR['GPIO'+port].IDR&=~(1<<pin);
+    else simR['GPIO'+port].IDR|=(1<<pin);
+  });
+}
+
+function togSw(port,pin){
+  var id='sw-p'+port.toLowerCase()+pin;
+  var el=document.getElementById(id);if(!el)return;
+  var wasPressedBefore=el.classList.contains('on');
+  el.classList.toggle('on');
+  if(!simR)return;
+  var oldIDR=simR['GPIO'+port].IDR;
+  syncIDR();
+  var newIDR=simR['GPIO'+port].IDR;
+  var line=pin;
+  if(simR.EXTI.IMR&(1<<line)){
+    var oldBit=(oldIDR>>>line)&1,newBit=(newIDR>>>line)&1;
+    var falling=oldBit===1&&newBit===0,rising=oldBit===0&&newBit===1;
+    var trig=(falling&&(simR.EXTI.FTSR&(1<<line)))||(rising&&(simR.EXTI.RTSR&(1<<line)));
+    if(trig){
+      simR.EXTI.PR|=(1<<line);
+      var hd=extiHandler(line);
+      if(simHandlerFns[hd])try{simHandlerFns[hd](simR,simV,simUart);}catch(e){}
+    }
+  }
+  runLoop();updateHW();
+}
+
+function onAdc(val){
+  document.getElementById('adc-val').textContent=val;
+  if(!simR)return;
+  simR.ADC1.DR=parseInt(val);
+  if(simR.ADC1.CR1&(1<<5)&&simHandlerFns['ADC_IRQHandler']){
+    simR.ADC1.SR|=2;try{simHandlerFns['ADC_IRQHandler'](simR,simV,simUart);}catch(e){}}
+  runLoop();updateHW();
+}
+
+function updateHW(){
+  if(!simR)return;
+  var pc13=!(simR.GPIOC.ODR&(1<<13)),pc14=!!(simR.GPIOC.ODR&(1<<14)),pb9=!!(simR.GPIOB.ODR&(1<<9));
+  document.getElementById('led-pc13').className='led'+(pc13?' on-g':'');
+  document.getElementById('led-pc14').className='led'+(pc14?' on-r':'');
+  document.getElementById('led-pb9').className='led'+(pb9?' on-y':'');
+  if(simUart.length){var txt='';simUart.forEach(function(ch){
+    if(typeof ch==='number'&&ch>=32&&ch<127)txt+=String.fromCharCode(ch);
+    else if(typeof ch==='string')txt+=ch;
+  });document.getElementById('uart-out').textContent=txt||'\u2014';}
+}
+
+// ===== QUESTIONS =====
+var QS=[
+{cat:'Lab 1',t:'LED ON (PC13)',d:'Turn on on-board LED PC13 (active-low).',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 2);\n    GPIOC->MODER |= (1 << 26);\n    GPIOC->ODR &= ~(1 << 13);\n    while (1) {}\n}'},
+{cat:'Lab 1',t:'LED ON (PC14)',d:'Turn on LED PC14.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 2);\n    GPIOC->MODER |= (1 << 28);\n    GPIOC->ODR |= (1 << 14);\n    while (1) {}\n}'},
+{cat:'Lab 3',t:'Button PA0 -> LED PC13',d:'PA0 (pull-up, active-low) controls PC13.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 2);\n    GPIOA->MODER &= ~(3 << 0);\n    GPIOA->PUPDR |= (1 << 0);\n    GPIOC->MODER |= (1 << 26);\n    while (1) {\n        if (GPIOA->IDR & (1 << 0))\n            GPIOC->ODR &= ~(1 << 13);\n        else\n            GPIOC->ODR |= (1 << 13);\n    }\n}'},
+{cat:'Lab 4',t:'Switch PB10 -> LED PC14',d:'PB10 (pull-up) controls PC14.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 1) | (1 << 2);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    GPIOC->MODER |= (1 << 28);\n    while (1) {\n        if (GPIOB->IDR & (1 << 10))\n            GPIOC->ODR &= ~(1 << 14);\n        else\n            GPIOC->ODR |= (1 << 14);\n    }\n}'},
+{cat:'Lab 5',t:'ADC Pot + LED',d:'ADC1 PA0 continuous, threshold toggles PC14.',sol:'#include "stm32f4xx.h"\nint adcData;\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 2);\n    RCC->APB2ENR |= (1 << 8);\n    GPIOA->MODER |= (3 << 0);\n    GPIOC->MODER |= (1 << 28);\n    ADC1->CR2 |= (1 << 1);\n    ADC1->SQR3 = 0;\n    ADC1->CR2 |= 1;\n    ADC1->CR2 |= (1 << 30);\n    while (1) {\n        while (!(ADC1->SR & (1 << 1))) {}\n        adcData = ADC1->DR;\n        if (adcData > 1024)\n            GPIOC->ODR |= (1 << 14);\n        else\n            GPIOC->ODR &= ~(1 << 14);\n    }\n}'},
+{cat:'Lab 6',t:'SysTick Blink (polling)',d:'Blink PC14 at 1Hz using SysTick COUNTFLAG.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 2);\n    GPIOC->MODER |= (1 << 28);\n    SysTick->LOAD = 16000000 - 1;\n    SysTick->VAL = 0;\n    SysTick->CTRL = 5;\n    while (1) {\n        if (SysTick->CTRL & 0x00010000)\n            GPIOC->ODR ^= (1 << 14);\n    }\n}'},
+{cat:'Lab 7',t:'EXTI: PA6/PB10 -> PC14',d:'PA6 falling->ON, PB10 falling->OFF.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 1) | (1 << 2);\n    GPIOC->MODER |= (1 << 28);\n    GPIOA->MODER &= ~(3 << 12);\n    GPIOA->PUPDR |= (1 << 12);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    RCC->APB2ENR |= (1 << 14);\n    SYSCFG->EXTICR[1] |= (0 << 8);\n    SYSCFG->EXTICR[2] |= (1 << 8);\n    EXTI->IMR |= (1 << 6) | (1 << 10);\n    EXTI->FTSR |= (1 << 6) | (1 << 10);\n    NVIC_EnableIRQ(EXTI9_5_IRQn);\n    NVIC_EnableIRQ(EXTI15_10_IRQn);\n    while (1) {}\n}\nvoid EXTI9_5_IRQHandler(void) {\n    if (EXTI->PR & (1 << 6)) {\n        EXTI->PR |= (1 << 6);\n        GPIOC->ODR |= (1 << 14);\n    }\n}\nvoid EXTI15_10_IRQHandler(void) {\n    if (EXTI->PR & (1 << 10)) {\n        EXTI->PR |= (1 << 10);\n        GPIOC->ODR &= ~(1 << 14);\n    }\n}'},
+{cat:'USART',t:'USART2 TX (115200)',d:'Send "V" via USART2 at 115200.',sol:'#include "stm32f4xx.h"\nint main() {\n    RCC->AHB1ENR |= (1 << 0);\n    GPIOA->MODER |= (1 << 5);\n    GPIOA->AFR[0] &= ~(1 << 11);\n    GPIOA->AFR[0] |= (1 << 10) | (1 << 9) | (1 << 8);\n    RCC->APB1ENR |= (1 << 17);\n    USART2->BRR = 0x008B;\n    USART2->CR1 |= (1 << 3);\n    USART2->CR1 |= (1 << 13);\n    while(1) {\n        while(!(USART2->SR & (1 << 7))) {};\n        USART2->DR = \'V\';\n    }\n}'},
+{cat:'USART',t:'USART2 Echo (9600)',d:'Receive and echo at 9600.',sol:'#include "stm32f4xx.h"\nuint8_t data;\nint main() {\n    RCC->AHB1ENR |= (1 << 0);\n    GPIOA->MODER |= (1 << 5) | (1 << 7);\n    GPIOA->AFR[0] |= (7 << 12) | (7 << 8);\n    RCC->APB1ENR |= (1 << 17);\n    USART2->BRR = 0x0683;\n    USART2->CR1 |= (1 << 2) | (1 << 3) | (1 << 13);\n    while(1) {\n        while(!(USART2->SR & (1 << 5))) {};\n        data = USART2->DR;\n        while(!(USART2->SR & (1 << 7))) {};\n        USART2->DR = data;\n    }\n}'},
+{cat:'ADC+INT',t:'ADC EOC Interrupt',d:'ADC1 EOC interrupt, threshold toggles PC14.',sol:'#include "stm32f4xx.h"\nvolatile int adcData;\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 2);\n    RCC->APB2ENR |= (1 << 8);\n    GPIOA->MODER |= (3 << 0);\n    GPIOC->MODER |= (1 << 28);\n    ADC1->CR2 |= (1 << 1);\n    ADC1->SQR3 = 0;\n    ADC1->CR1 |= (1 << 5);\n    NVIC_EnableIRQ(ADC_IRQn);\n    ADC1->CR2 |= 1;\n    ADC1->CR2 |= (1 << 30);\n    while (1) {}\n}\nvoid ADC_IRQHandler(void) {\n    adcData = ADC1->DR;\n    if (adcData > 1024)\n        GPIOC->ODR |= (1 << 14);\n    else\n        GPIOC->ODR &= ~(1 << 14);\n}'},
+{cat:'Logic',t:'Majority Voter',d:'PA0,PA6,PB10: 2+ pressed->PC14, else->PB9.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 1) | (1 << 2);\n    GPIOA->MODER &= ~((3 << 0) | (3 << 12));\n    GPIOA->PUPDR |= (1 << 0) | (1 << 12);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    GPIOC->MODER |= (1 << 28);\n    GPIOB->MODER |= (1 << 18);\n    while (1) {\n        int a = !(GPIOA->IDR & (1 << 0));\n        int b = !(GPIOA->IDR & (1 << 6));\n        int c = !(GPIOB->IDR & (1 << 10));\n        if (a + b + c >= 2) {\n            GPIOC->ODR |= (1 << 14);\n            GPIOB->ODR &= ~(1 << 9);\n        } else {\n            GPIOC->ODR &= ~(1 << 14);\n            GPIOB->ODR |= (1 << 9);\n        }\n    }\n}'},
+{cat:'Logic',t:'2-to-1 MUX',d:'D0=PA0, D1=PA6, S=PB10, Y=PC13.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 1) | (1 << 2);\n    GPIOA->MODER &= ~((3 << 0) | (3 << 12));\n    GPIOA->PUPDR |= (1 << 0) | (1 << 12);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    GPIOC->MODER |= (1 << 26);\n    while (1) {\n        int d0 = (GPIOA->IDR & (1 << 0)) ? 1 : 0;\n        int d1 = (GPIOA->IDR & (1 << 6)) ? 1 : 0;\n        int s  = (GPIOB->IDR & (1 << 10)) ? 1 : 0;\n        int y = s ? d1 : d0;\n        if (y) GPIOC->ODR |= (1 << 13);\n        else GPIOC->ODR &= ~(1 << 13);\n    }\n}'},
+{cat:'Logic',t:'Password (101)',d:'PA0=1,PA6=0,PB10=1->PC14. Else->PB9.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 1) | (1 << 2);\n    GPIOA->MODER &= ~((3 << 0) | (3 << 12));\n    GPIOA->PUPDR |= (1 << 0) | (1 << 12);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    GPIOC->MODER |= (1 << 28);\n    GPIOB->MODER |= (1 << 18);\n    while (1) {\n        int a = (GPIOA->IDR & (1 << 0)) ? 1 : 0;\n        int b = (GPIOA->IDR & (1 << 6)) ? 1 : 0;\n        int c = (GPIOB->IDR & (1 << 10)) ? 1 : 0;\n        if (a == 1 && b == 0 && c == 1) {\n            GPIOC->ODR |= (1 << 14);\n            GPIOB->ODR &= ~(1 << 9);\n        } else {\n            GPIOC->ODR &= ~(1 << 14);\n            GPIOB->ODR |= (1 << 9);\n        }\n    }\n}'},
+{cat:'EXTI+USART',t:'EXTI + USART @ 4800',d:'PA6/PB10 toggle LEDs + USART2 4800.',sol:'#include "stm32f4xx.h"\nvoid SendChar(char c){while(!(USART2->SR&(1<<7)));USART2->DR=c;}\nvoid SendStr(const char*s){while(*s)SendChar(*s++);}\nvoid EXTI9_5_IRQHandler(void){\n    if(EXTI->PR&(1<<6)){EXTI->PR|=(1<<6);GPIOC->ODR^=(1<<13);SendStr("PA6\\r\\n");}\n}\nvoid EXTI15_10_IRQHandler(void){\n    if(EXTI->PR&(1<<10)){EXTI->PR|=(1<<10);GPIOB->ODR^=(1<<9);SendStr("PB10\\r\\n");}\n}\nint main(void){\n    RCC->AHB1ENR|=(1<<0)|(1<<1)|(1<<2);\n    RCC->APB2ENR|=(1<<14);RCC->APB1ENR|=(1<<17);\n    GPIOA->MODER&=~(3<<12);GPIOA->PUPDR|=(1<<12);\n    GPIOB->MODER&=~(3<<20);GPIOB->PUPDR|=(1<<20);\n    GPIOC->MODER|=(1<<26);GPIOB->MODER|=(1<<18);\n    GPIOA->MODER|=(2<<4);GPIOA->AFR[0]|=(7<<8);\n    USART2->BRR=0xD05;USART2->CR1|=(1<<3)|(1<<13);\n    SYSCFG->EXTICR[1]|=(0<<8);SYSCFG->EXTICR[2]|=(1<<8);\n    EXTI->IMR|=(1<<6)|(1<<10);EXTI->FTSR|=(1<<6)|(1<<10);\n    NVIC->ISER[0]|=(1<<23);NVIC->ISER[1]|=(1<<8);\n    while(1){}\n}'},
+{cat:'ADC+SysTick',t:'ADC 10-bit + SysTick 1Hz',d:'ADC 10-bit EOCIE. <512: blink 1Hz. Else OFF.',sol:'#include "stm32f4xx.h"\nvolatile uint16_t adc_value=0;\nvolatile uint8_t blink_en=0;\nvoid ADC_IRQHandler(void){\n    adc_value=ADC1->DR;\n    if(adc_value<512)blink_en=1;\n    else{blink_en=0;GPIOC->ODR&=~(1<<13);}\n    ADC1->CR2|=(1<<30);\n}\nvoid SysTick_Handler(void){\n    if(blink_en)GPIOC->ODR^=(1<<13);\n}\nint main(void){\n    RCC->AHB1ENR|=(1<<0)|(1<<2);\n    RCC->APB2ENR|=(1<<8);\n    GPIOA->MODER|=(3<<0);\n    GPIOC->MODER|=(1<<26);\n    ADC1->CR1|=(1<<24)|(1<<5);\n    ADC1->SQR3=0;ADC1->CR2|=1;\n    NVIC->ISER[0]|=(1<<18);\n    ADC1->CR2|=(1<<30);\n    SysTick->LOAD=7999999;SysTick->VAL=0;SysTick->CTRL=7;\n    while(1){}\n}'},
+{cat:'Eval',t:'Photo Storage System',d:'S2(PA6)=upload(blink PB9 5x), S1(PB10)=download(blink PC14 5x), KEY(PA0)=delete. PC13=full at 3.',sol:null},
+{cat:'Eval',t:'Smart Parking System',d:'S1(PB10)=entry(blink PB9 3x), S2(PA6)=exit(blink PC14 3x), KEY(PA0)=reset. PC13=full at 5.',sol:null},
+{cat:'Logic',t:'2-bit Binary Selector',d:'PA6(b0),PB10(b1): 00->PC13, 01->PC14, 10->PB9, 11->OFF.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 1) | (1 << 2);\n    GPIOA->MODER &= ~(3 << 12);\n    GPIOA->PUPDR |= (1 << 12);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    GPIOC->MODER |= (1 << 26) | (1 << 28);\n    GPIOB->MODER |= (1 << 18);\n    while (1) {\n        int b0 = (GPIOA->IDR & (1 << 6)) ? 1 : 0;\n        int b1 = (GPIOB->IDR & (1 << 10)) ? 1 : 0;\n        int val = (b1 << 1) | b0;\n        GPIOC->ODR &= ~((1 << 13) | (1 << 14));\n        GPIOB->ODR &= ~(1 << 9);\n        if (val == 0) GPIOC->ODR |= (1 << 13);\n        else if (val == 1) GPIOC->ODR |= (1 << 14);\n        else if (val == 2) GPIOB->ODR |= (1 << 9);\n    }\n}'},
+];
+
+// ===== UI =====
+var editor;
+function initEditor(){
+  editor=CodeMirror.fromTextArea(document.getElementById('ed'),{mode:'text/x-csrc',lineNumbers:true,matchBrackets:true,autoCloseBrackets:true,indentUnit:4,tabSize:4,indentWithTabs:false});
+  editor.setValue(TEMPLATE);
+  document.querySelectorAll('.tab').forEach(function(t){t.addEventListener('click',function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('.tp').forEach(function(x){x.classList.remove('active');});
+    this.classList.add('active');document.getElementById('p-'+this.dataset.t).classList.add('active');});});
+  renderBoard();renderQuestions();
+}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderFindings(findings){
+  var pass=findings.filter(function(f){return f.s==='pass';}).length,total=findings.length,pct=total?Math.round(pass/total*100):0;
+  var col=pct>=80?'var(--ok)':pct>=50?'var(--wrn)':'var(--err)';
+  var html='<div class="score"><div class="s-track"><div class="s-fill" style="width:'+pct+'%;background:'+col+'"></div></div><span class="s-txt" style="color:'+col+'">'+pass+'/'+total+'</span></div>';
+  var cats={};findings.forEach(function(f){if(!cats[f.c])cats[f.c]=[];cats[f.c].push(f);});
+  for(var cat in cats){html+='<div class="cat-hd">'+cat+'</div>';
+    cats[cat].forEach(function(f){
+      var cls=f.s==='pass'?'pass':f.s==='error'?'fail':f.s==='warn'?'warn':'info';
+      var icon=f.s==='pass'?'\u2713':f.s==='error'?'\u2717':f.s==='info'?'\u2139':'!';
+      html+='<div class="finding '+cls+'"><span class="fi">'+icon+'</span><span class="fl">'+f.m;
+      if(f.s!=='pass'&&f.h)html+='<span class="fh">'+esc(f.h)+'</span>';
+      html+='</span></div>';});}
+  document.getElementById('p-analysis').innerHTML=html;
+}
+
+function renderRegDump(R){
+  var html='<div class="cfg-block"><h4>Computed Register Values</h4><div class="reg-dump">';
+  html+='RCC.AHB1ENR = 0x'+hex(R.RCC.AHB1ENR)+'\nRCC.APB1ENR = 0x'+hex(R.RCC.APB1ENR)+'\nRCC.APB2ENR = 0x'+hex(R.RCC.APB2ENR)+'\n';
+  ['A','B','C'].forEach(function(p){var g=R['GPIO'+p];
+    if(g.MODER||g.PUPDR||g.ODR||g.AFR[0]||g.AFR[1]||g.OTYPER||g.OSPEEDR){
+      html+='\nGPIO'+p+'.MODER   = 0x'+hex(g.MODER)+'\nGPIO'+p+'.PUPDR   = 0x'+hex(g.PUPDR)+'\nGPIO'+p+'.ODR     = 0x'+hex(g.ODR);
+      if(g.OTYPER)html+='\nGPIO'+p+'.OTYPER  = 0x'+hex(g.OTYPER);
+      if(g.OSPEEDR)html+='\nGPIO'+p+'.OSPEEDR = 0x'+hex(g.OSPEEDR);
+      if(g.AFR[0])html+='\nGPIO'+p+'.AFR[0]  = 0x'+hex(g.AFR[0]);
+      if(g.AFR[1])html+='\nGPIO'+p+'.AFR[1]  = 0x'+hex(g.AFR[1]);
+      html+='\n';}});
+  if(R.USART2.BRR||R.USART2.CR1)html+='\nUSART2.BRR = 0x'+hex(R.USART2.BRR)+'\nUSART2.CR1 = 0x'+hex(R.USART2.CR1)+'\n';
+  if(R.ADC1.CR1||R.ADC1.CR2)html+='\nADC1.CR1  = 0x'+hex(R.ADC1.CR1)+'\nADC1.CR2  = 0x'+hex(R.ADC1.CR2)+'\nADC1.SQR3 = 0x'+hex(R.ADC1.SQR3)+'\n';
+  if(R.SysTick.LOAD||R.SysTick.CTRL)html+='\nSysTick.LOAD = '+R.SysTick.LOAD+'\nSysTick.CTRL = 0x'+hex(R.SysTick.CTRL)+'\n';
+  if(R.EXTI.IMR)html+='\nEXTI.IMR  = 0x'+hex(R.EXTI.IMR)+'\nEXTI.FTSR = 0x'+hex(R.EXTI.FTSR)+'\nEXTI.RTSR = 0x'+hex(R.EXTI.RTSR)+'\n';
+  if(R.I2C1.CCR||R.I2C1.CR1||R.I2C1.CR2)html+='\nI2C1.CR1   = 0x'+hex(R.I2C1.CR1)+'\nI2C1.CR2   = 0x'+hex(R.I2C1.CR2)+'\nI2C1.CCR   = '+R.I2C1.CCR+'\nI2C1.TRISE = '+R.I2C1.TRISE+'\n';
+  if(R.NVIC.ISER[0]||R.NVIC.ISER[1])html+='\nNVIC.ISER[0] = 0x'+hex(R.NVIC.ISER[0])+'\nNVIC.ISER[1] = 0x'+hex(R.NVIC.ISER[1])+'\n';
+  html+='</div></div>';
+  if(simConfig){
+    if(simConfig.pins.length){html+='<div class="cfg-block"><h4>Pin Config</h4><table class="pin-tbl"><tr><th>Pin</th><th>Mode</th><th>Pull</th></tr>';
+      simConfig.pins.forEach(function(p){html+='<tr><td>P'+p.port+p.pin+'</td><td>'+p.mode+'</td><td>'+p.pull+'</td></tr>';});html+='</table></div>';}
+    if(simConfig.usart){html+='<div class="cfg-block"><h4>USART2</h4><div class="cfg-row"><span class="k">Baud</span><span class="v">~'+simConfig.usart.baud+'</span></div><div class="cfg-row"><span class="k">BRR</span><span class="v">'+simConfig.usart.brrHex+'</span></div></div>';}
+    if(simConfig.adc){html+='<div class="cfg-block"><h4>ADC1</h4><div class="cfg-row"><span class="k">Res</span><span class="v">'+simConfig.adc.res+'-bit</span></div><div class="cfg-row"><span class="k">Ch</span><span class="v">'+simConfig.adc.channel+'</span></div></div>';}
+    if(simConfig.systick){html+='<div class="cfg-block"><h4>SysTick</h4><div class="cfg-row"><span class="k">Period</span><span class="v">'+simConfig.systick.periodMs+'ms</span></div></div>';}
+    if(simConfig.exti.length){html+='<div class="cfg-block"><h4>EXTI</h4>';simConfig.exti.forEach(function(e){html+='<div class="cfg-row"><span class="k">Line '+e.line+'</span><span class="v">'+e.edge+'</span></div>';});html+='</div>';}
+  }
+  document.getElementById('p-regs').innerHTML=html;
+}
+
+function renderBoard(){
+  var html='<div class="cfg-block"><h4>Board Pins</h4><table class="pin-tbl"><tr><th>Pin</th><th>Function</th></tr>';
+  BOARD_PINS.forEach(function(p){html+='<tr><td>P'+p.p+p.n+'</td><td>'+p.fn+'</td></tr>';});
+  html+='</table></div><div class="cfg-block"><h4>Clocks</h4><table class="pin-tbl"><tr><th>Periph</th><th>Reg</th><th>Bit</th></tr>';
+  html+='<tr><td>GPIOA</td><td>AHB1ENR</td><td>0</td></tr><tr><td>GPIOB</td><td>AHB1ENR</td><td>1</td></tr><tr><td>GPIOC</td><td>AHB1ENR</td><td>2</td></tr>';
+  html+='<tr><td>USART2</td><td>APB1ENR</td><td>17</td></tr><tr><td>I2C1</td><td>APB1ENR</td><td>21</td></tr>';
+  html+='<tr><td>SYSCFG</td><td>APB2ENR</td><td>14</td></tr><tr><td>ADC1</td><td>APB2ENR</td><td>8</td></tr></table></div>';
+  html+='<div class="cfg-block"><h4>USART2 BRR</h4><table class="pin-tbl"><tr><th>Baud</th><th>BRR</th></tr>';
+  html+='<tr><td>4800</td><td>0x0D05</td></tr><tr><td>9600</td><td>0x0683</td></tr><tr><td>38400</td><td>0x01A1</td></tr><tr><td>115200</td><td>0x008B</td></tr></table></div>';
+  html+='<div class="cfg-block"><h4>EXTI IRQ</h4><table class="pin-tbl"><tr><th>Lines</th><th>IRQ</th><th>Handler</th></tr>';
+  html+='<tr><td>0</td><td>6</td><td>EXTI0_IRQHandler</td></tr><tr><td>5-9</td><td>23</td><td>EXTI9_5_IRQHandler</td></tr><tr><td>10-15</td><td>40</td><td>EXTI15_10_IRQHandler</td></tr></table></div>';
+  document.getElementById('p-board').innerHTML=html;
+}
+
+function renderQuestions(){
+  var html='<div style="font-size:10.5px;color:var(--fg-d);margin-bottom:6px;line-height:1.4">Practice prompts to get started. The analyzer works on <b>any</b> code you write.</div>';
+  var lc='';QS.forEach(function(q,i){if(q.cat!==lc){html+='<div class="cat-hd">'+q.cat+'</div>';lc=q.cat;}
+    html+='<div class="q-card" onclick="showQ('+i+')"><div class="q-cat">'+q.cat+'</div><h4>'+q.t+'</h4><p>'+q.d+'</p></div>';});
+  document.getElementById('p-questions').innerHTML=html;
+}
+function showQ(i){
+  var q=QS[i];var html='<button class="back-btn" onclick="renderQuestions()">\u2190 Back</button>';
+  html+='<div class="q-detail"><div class="q-cat">'+q.cat+'</div><h3>'+q.t+'</h3><p>'+q.d+'</p>';
+  html+='<div class="q-btns">';if(q.sol)html+='<button class="btn btn-s" onclick="loadSol('+i+')">Load Solution</button>';
+  html+='<button class="btn btn-p" onclick="editor.setValue(TEMPLATE)">Blank</button></div></div>';
+  if(q.sol)html+='<div style="margin-top:8px"><div class="cat-hd">Reference</div><div class="sol-code">'+esc(q.sol)+'</div></div>';
+  else html+='<div style="margin-top:8px;padding:10px;background:var(--wrn-s);border-radius:var(--rs);font-size:11px;color:var(--wrn)">No reference \u2014 try it yourself!</div>';
+  document.getElementById('p-questions').innerHTML=html;
+}
+function loadSol(i){editor.setValue(QS[i].sol);runAll();}
+</script>
