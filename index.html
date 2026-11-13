@@ -765,6 +765,218 @@ function analyzeRegs(R,code){
 
 function hex(v){var h=(v>>>0).toString(16).toUpperCase();while(h.length<4)h='0'+h;return h;}
 
+// ===== LOGIC VERIFICATION =====
+var activeQ=-1;
+function verifyLogic(studentR,code,qi){
+  var findings=[];
+  var q=QS[qi];
+  if(!q||!q.sol)return findings;
+  var refR=initRegs();
+  execSetup(q.sol,refR);
+  findings.push({s:'info',c:'Logic Check',m:'Comparing against reference: '+q.t});
+  var regPaths=[
+    ['RCC','AHB1ENR'],['RCC','APB1ENR'],['RCC','APB2ENR']
+  ];
+  ['A','B','C'].forEach(function(p){
+    regPaths.push(['GPIO'+p,'MODER'],['GPIO'+p,'PUPDR'],['GPIO'+p,'ODR'],['GPIO'+p,'OTYPER'],['GPIO'+p,'OSPEEDR']);
+  });
+  regPaths.push(['USART2','BRR'],['USART2','CR1'],['ADC1','CR1'],['ADC1','CR2'],['ADC1','SQR3']);
+  regPaths.push(['SysTick','LOAD'],['SysTick','CTRL']);
+  regPaths.push(['EXTI','IMR'],['EXTI','FTSR'],['EXTI','RTSR']);
+  regPaths.push(['I2C1','CR1'],['I2C1','CR2'],['I2C1','CCR'],['I2C1','TRISE']);
+  regPaths.push(['NVIC','ISER']);
+  var initR=initRegs();
+  var diffs=0,matches=0;
+  regPaths.forEach(function(rp){
+    var periph=rp[0],reg=rp[1];
+    if(reg==='ISER'){
+      for(var k=0;k<3;k++){
+        var sv=(studentR[periph][reg][k]||0)>>>0;
+        var rv=(refR[periph][reg][k]||0)>>>0;
+        var iv=(initR[periph][reg][k]||0)>>>0;
+        if(rv===iv&&sv===iv)return;
+        if(sv===rv){matches++;findings.push({s:'pass',c:'Logic Check',m:periph+'.'+reg+'['+k+'] = 0x'+hex(sv)+' ✓'});}
+        else if(rv!==iv){diffs++;findings.push({s:'error',c:'Logic Check',m:periph+'.'+reg+'['+k+'] yours=0x'+hex(sv)+' expected=0x'+hex(rv),h:periph+'->'+reg+'['+k+'] should be 0x'+(rv>>>0).toString(16).toUpperCase()});}
+      }
+      return;
+    }
+    var sv=(studentR[periph]?studentR[periph][reg]:0)||0;
+    var rv=(refR[periph]?refR[periph][reg]:0)||0;
+    var iv=(initR[periph]?initR[periph][reg]:0)||0;
+    sv=sv>>>0;rv=rv>>>0;iv=iv>>>0;
+    if(rv===iv&&sv===iv)return;
+    if(sv===rv){matches++;findings.push({s:'pass',c:'Logic Check',m:periph+'.'+reg+' = 0x'+hex(sv)+' ✓'});}
+    else if(rv!==iv){diffs++;findings.push({s:'error',c:'Logic Check',m:periph+'.'+reg+' yours=0x'+hex(sv)+' expected=0x'+hex(rv),h:periph+'->'+reg+' should be 0x'+(rv>>>0).toString(16).toUpperCase()});}
+  });
+  // AFR check
+  ['A','B','C'].forEach(function(p){
+    for(var k=0;k<2;k++){
+      var sv=(studentR['GPIO'+p].AFR[k]||0)>>>0;
+      var rv=(refR['GPIO'+p].AFR[k]||0)>>>0;
+      if(sv===0&&rv===0)return;
+      if(sv===rv){matches++;findings.push({s:'pass',c:'Logic Check',m:'GPIO'+p+'.AFR['+k+'] = 0x'+hex(sv)+' ✓'});}
+      else if(rv!==0){diffs++;findings.push({s:'error',c:'Logic Check',m:'GPIO'+p+'.AFR['+k+'] yours=0x'+hex(sv)+' expected=0x'+hex(rv)});}
+    }
+  });
+  // Loop behavior test
+  var refLoopFn=null,stuLoopFn=null;
+  try{var refRes=execSetup(q.sol,initRegs());refLoopFn=refRes.loopBody?buildFn(refRes.loopBody,refRes.fns):null;}catch(e){}
+  try{var stuRes=execSetup(code,initRegs());stuLoopFn=stuRes.loopBody?buildFn(stuRes.loopBody,stuRes.fns):null;}catch(e){}
+  if(refLoopFn&&stuLoopFn){
+    var testInputs=[];
+    if(q.d.toLowerCase().indexOf('adc')>=0||q.d.toLowerCase().indexOf('threshold')>=0||q.d.toLowerCase().indexOf('pot')>=0){
+      testInputs=[{name:'ADC low (500)',setup:function(R){R.ADC1.DR=500;R.ADC1.SR|=2;R.USART2.SR=0xC0;}},
+                  {name:'ADC high (3500)',setup:function(R){R.ADC1.DR=3500;R.ADC1.SR|=2;R.USART2.SR=0xC0;}}];
+    }
+    if(q.d.toLowerCase().indexOf('pa0')>=0||q.d.toLowerCase().indexOf('switch')>=0||q.d.toLowerCase().indexOf('button')>=0){
+      testInputs.push({name:'All switches OFF (IDR high)',setup:function(R){R.GPIOA.IDR=0xFFFF;R.GPIOB.IDR=0xFFFF;R.USART2.SR=0xC0;R.ADC1.SR|=2;}});
+      testInputs.push({name:'All switches ON (IDR low)',setup:function(R){R.GPIOA.IDR=0;R.GPIOB.IDR=0;R.USART2.SR=0xC0;R.ADC1.SR|=2;}});
+    }
+    testInputs.forEach(function(ti){
+      var refTest=initRegs();execSetup(q.sol,refTest);refTest.USART2.SR=0xC0;refTest.ADC1.SR|=2;
+      ti.setup(refTest);try{refLoopFn(refTest,{},[])}catch(e){}
+      var stuTest=initRegs();execSetup(code,stuTest);stuTest.USART2.SR=0xC0;stuTest.ADC1.SR|=2;
+      ti.setup(stuTest);try{stuLoopFn(stuTest,{},[])}catch(e){}
+      var rODR_A=(refTest.GPIOA.ODR>>>0),rODR_B=(refTest.GPIOB.ODR>>>0),rODR_C=(refTest.GPIOC.ODR>>>0);
+      var sODR_A=(stuTest.GPIOA.ODR>>>0),sODR_B=(stuTest.GPIOB.ODR>>>0),sODR_C=(stuTest.GPIOC.ODR>>>0);
+      if(rODR_A===sODR_A&&rODR_B===sODR_B&&rODR_C===sODR_C){
+        findings.push({s:'pass',c:'Behavior Test',m:ti.name+': outputs match ✓'});
+      }else{
+        var details=[];
+        if(rODR_C!==sODR_C)details.push('GPIOC.ODR yours=0x'+hex(sODR_C)+' expected=0x'+hex(rODR_C));
+        if(rODR_B!==sODR_B)details.push('GPIOB.ODR yours=0x'+hex(sODR_B)+' expected=0x'+hex(rODR_B));
+        if(rODR_A!==sODR_A)details.push('GPIOA.ODR yours=0x'+hex(sODR_A)+' expected=0x'+hex(rODR_A));
+        findings.push({s:'error',c:'Behavior Test',m:ti.name+': '+details.join(', ')});
+        diffs++;
+      }
+    });
+  }
+  // Verdict
+  if(diffs===0&&matches>0)findings.unshift({s:'pass',c:'Verdict',m:'✅ Code is CORRECT! All registers and behavior match the reference.'});
+  else if(diffs>0)findings.unshift({s:'error',c:'Verdict',m:'❌ '+diffs+' difference'+(diffs>1?'s':'')+' found. Check the details below.'});
+  return findings;
+}
+function smartLogicCheck(R,code,prevFindings,hasRefCheck){
+  var findings=[],c=stripC(code),fns=extractFunctions(c);
+  var mainBody=fns['main']||'';
+  var loopM=mainBody.match(/while\s*\(\s*1\s*\)|for\s*\(\s*;\s*;\s*\)/);
+  var loopBody='';
+  if(loopM){var aft=mainBody.substring(loopM.index);var bi=aft.indexOf('{');if(bi>=0)loopBody=findBlock(aft,bi);}
+  var hCode='';for(var fn in fns){if(/_IRQHandler$/.test(fn)||fn==='SysTick_Handler')hCode+=' '+fns[fn];}
+  var active=loopBody+hCode;
+  // --- Peripheral Detection ---
+  var det={adc:/ADC1?\s*->/.test(c),usart:/USART2\s*->/.test(c),i2c:/I2C1\s*->/.test(c),
+    systick:/SysTick\s*->/.test(c),exti:/EXTI\s*->/.test(c)};
+  var outs=[],ins=[];
+  ['A','B','C'].forEach(function(p){for(var n=0;n<=15;n++){
+    var m=(R['GPIO'+p].MODER>>>(n*2))&3;
+    if(m===1)outs.push('P'+p+n);
+    if(m===0&&((R['GPIO'+p].PUPDR>>>(n*2))&3)>0&&new RegExp('GPIO'+p+'\\s*->\\s*IDR').test(c))ins.push('P'+p+n);
+  }});
+  var label=[];
+  if(det.adc)label.push('ADC1');if(det.usart)label.push('USART2');if(det.i2c)label.push('I2C1');
+  if(det.systick)label.push('SysTick');if(det.exti)label.push('EXTI');
+  if(outs.length)label.push('LED('+outs.join(',')+')');
+  if(ins.length)label.push('Button('+ins.join(',')+')');
+  if(!label.length)return findings;
+  findings.push({s:'info',c:'Code Type',m:label.join(' + ')});
+  var issues=0;
+  // --- I2C1 pin checks ---
+  if(det.i2c){var iOk=true;
+    if(!(R.GPIOB.OTYPER&(1<<6))){findings.push({s:'error',c:'I2C1 Pins',m:'PB6 (SCL) needs open-drain',h:'GPIOB->OTYPER |= (1<<6);'});iOk=false;issues++;}
+    if(!(R.GPIOB.OTYPER&(1<<7))){findings.push({s:'error',c:'I2C1 Pins',m:'PB7 (SDA) needs open-drain',h:'GPIOB->OTYPER |= (1<<7);'});iOk=false;issues++;}
+    var a6=(R.GPIOB.AFR[0]>>>24)&0xF,a7=(R.GPIOB.AFR[0]>>>28)&0xF;
+    if(a6!==4){findings.push({s:'error',c:'I2C1 Pins',m:'PB6 AF='+a6+' (need 4)',h:'GPIOB->AFR[0] |= (4<<24);'});iOk=false;issues++;}
+    if(a7!==4){findings.push({s:'error',c:'I2C1 Pins',m:'PB7 AF='+a7+' (need 4)',h:'GPIOB->AFR[0] |= (4<<28);'});iOk=false;issues++;}
+    var m6=(R.GPIOB.MODER>>>12)&3,m7=(R.GPIOB.MODER>>>14)&3;
+    if(m6!==2){findings.push({s:'error',c:'I2C1 Pins',m:'PB6 MODER='+m6+' (need 2=AF)',h:'GPIOB->MODER |= (2<<12);'});iOk=false;issues++;}
+    if(m7!==2){findings.push({s:'error',c:'I2C1 Pins',m:'PB7 MODER='+m7+' (need 2=AF)',h:'GPIOB->MODER |= (2<<14);'});iOk=false;issues++;}
+    if(iOk)findings.push({s:'pass',c:'I2C1 Pins',m:'PB6/PB7 correct (AF4, open-drain)'});
+  }
+  // --- USART2 RX pin ---
+  if(det.usart&&(R.USART2.CR1&(1<<2))){
+    var pa3m=(R.GPIOA.MODER>>>6)&3,pa3af=(R.GPIOA.AFR[0]>>>12)&0xF;
+    if(pa3m!==2){findings.push({s:'error',c:'USART2 Pins',m:'PA3 (RX) not AF mode',h:'GPIOA->MODER |= (2<<6);'});issues++;}
+    else if(pa3af!==7){findings.push({s:'error',c:'USART2 Pins',m:'PA3 AF='+pa3af+' (need 7)',h:'GPIOA->AFR[0] |= (7<<12);'});issues++;}
+    else findings.push({s:'pass',c:'USART2 Pins',m:'PA3 (RX) correct (AF7)'});
+  }
+  // --- ADC start check ---
+  if(det.adc&&(R.ADC1.CR2&1)&&!(R.ADC1.CR2&(1<<30))&&!(R.ADC1.CR1&(1<<5)))
+    findings.push({s:'warn',c:'ADC Config',m:'ADC on but no SWSTART and no EOCIE',h:'ADC1->CR2 |= (1<<30);'});
+  // --- Loop Logic Analysis ---
+  if(active){
+    // ADC polling mode
+    if(det.adc&&!(R.ADC1.CR1&(1<<5))){
+      if(/ADC1\s*->\s*DR/.test(loopBody)){
+        findings.push({s:'pass',c:'Loop Logic',m:'ADC: reads DR in loop'});
+        if(/ADC1\s*->\s*SR/.test(loopBody))findings.push({s:'pass',c:'Loop Logic',m:'ADC: waits for EOC flag'});
+        else findings.push({s:'warn',c:'Loop Logic',m:'ADC: no EOC wait before read',h:'while(!(ADC1->SR & (1<<1)));'});
+      }else if(loopBody)findings.push({s:'warn',c:'Loop Logic',m:'ADC configured but DR not read in loop'});
+    }
+    // ADC interrupt mode
+    if(det.adc&&(R.ADC1.CR1&(1<<5))){
+      var irqB=fns['ADC_IRQHandler']||'';
+      if(/DR/.test(irqB))findings.push({s:'pass',c:'Loop Logic',m:'ADC: IRQ handler reads DR'});
+      else if(irqB)findings.push({s:'warn',c:'Loop Logic',m:'ADC: IRQ handler does not read DR'});
+    }
+    // ADC threshold -> output
+    if(det.adc&&/if\s*\(/.test(active)&&outs.length&&(/[<>]=?\s*\d/.test(active)||/\d+\s*[<>]=?/.test(active)))
+      findings.push({s:'pass',c:'Loop Logic',m:'ADC: threshold comparison controls output'});
+    // USART TX
+    if(det.usart&&(R.USART2.CR1&(1<<3))&&/USART2\s*->\s*DR\s*=/.test(active)){
+      findings.push({s:'pass',c:'Loop Logic',m:'USART: transmits data (DR write)'});
+      if(/USART2\s*->\s*SR/.test(active))findings.push({s:'pass',c:'Loop Logic',m:'USART: waits for TXE'});
+      else findings.push({s:'warn',c:'Loop Logic',m:'USART: no TXE wait before write',h:'while(!(USART2->SR & (1<<7)));'});
+    }
+    // USART RX
+    if(det.usart&&(R.USART2.CR1&(1<<2))&&/=\s*(?:\(.*?\)\s*)?USART2\s*->\s*DR/.test(active)){
+      findings.push({s:'pass',c:'Loop Logic',m:'USART: receives data (DR read)'});
+      if(/USART2\s*->\s*SR/.test(active))findings.push({s:'pass',c:'Loop Logic',m:'USART: waits for RXNE'});
+    }
+    // USART echo (TX+RX in same loop)
+    if(det.usart&&(R.USART2.CR1&(1<<2))&&(R.USART2.CR1&(1<<3))&&/=\s*(?:\(.*?\)\s*)?USART2\s*->\s*DR/.test(active)&&/USART2\s*->\s*DR\s*=/.test(active))
+      findings.push({s:'info',c:'Loop Logic',m:'USART: echo mode detected (RX then TX)'});
+    // Button -> LED
+    if(ins.length&&outs.length&&/IDR/.test(loopBody)&&/ODR/.test(loopBody))
+      findings.push({s:'pass',c:'Loop Logic',m:'Button input controls LED output'});
+    // SysTick polling
+    if(det.systick&&!(R.SysTick.CTRL&2)&&/CTRL\s*&/.test(loopBody))
+      findings.push({s:'pass',c:'Loop Logic',m:'SysTick: polls COUNTFLAG in loop'});
+    // SysTick ISR
+    if(det.systick&&(R.SysTick.CTRL&2)&&fns['SysTick_Handler']&&/ODR/.test(fns['SysTick_Handler']))
+      findings.push({s:'pass',c:'Loop Logic',m:'SysTick: handler toggles output'});
+    // EXTI handlers toggle outputs
+    if(det.exti){
+      for(var efn in fns){if(/_IRQHandler$/.test(efn)&&/ODR/.test(fns[efn]))
+        findings.push({s:'pass',c:'Loop Logic',m:efn+': controls output on interrupt'});}
+      for(var efn2 in fns){if(/_IRQHandler$/.test(efn2)&&/USART2\s*->\s*DR\s*=/.test(fns[efn2]))
+        findings.push({s:'pass',c:'Loop Logic',m:efn2+': sends data via USART on interrupt'});}
+    }
+  }
+  // --- Combination Detection ---
+  var combos=[];
+  if(det.adc&&det.i2c)combos.push('ADC \u2192 I2C LCD');
+  if(det.adc&&det.usart)combos.push('ADC \u2192 USART serial');
+  if(det.adc&&outs.length&&/if/.test(active))combos.push('ADC threshold \u2192 LED');
+  if(det.exti&&det.usart)combos.push('EXTI \u2192 USART');
+  if(det.exti&&outs.length)combos.push('EXTI \u2192 LED toggle');
+  if(det.systick&&outs.length)combos.push('SysTick \u2192 LED blink');
+  if(det.adc&&det.systick)combos.push('ADC + SysTick timing');
+  if(det.usart&&ins.length)combos.push('Button \u2192 USART');
+  if(combos.length)findings.push({s:'info',c:'Combined Logic',m:combos.join(' | ')});
+  // --- PC13 note ---
+  if(/GPIOC\s*->\s*ODR\s*\|=.*13/.test(c)&&/GPIOC\s*->\s*ODR\s*&=.*13/.test(c))
+    findings.push({s:'info',c:'Note',m:'PC13 is active-low on Black Pill \u2014 ODR=0 turns LED ON, ODR=1 turns OFF'});
+  // --- Verdict (only when no practice question reference check) ---
+  if(!hasRefCheck){
+    var prevErr=prevFindings.filter(function(f){return f.s==='error';}).length;
+    var tot=prevErr+issues;
+    if(tot===0)findings.unshift({s:'pass',c:'Logic Verdict',m:'\u2705 Code looks correct \u2014 '+label.join(' + ')+' all configured properly'});
+    else findings.unshift({s:'error',c:'Logic Verdict',m:'\u274C '+tot+' issue'+(tot>1?'s':'')+' found \u2014 check details below'});
+  }
+  return findings;
+}
+
 // ===== SIMULATION STATE =====
 var simR=null,simV={},simLoopFn=null,simHandlerFns={},simFns={},simUart=[],simTickTimer=null,simConfig=null;
 
@@ -776,7 +988,9 @@ function runAll(){
   var res=execSetup(code,simR);
   var analysis=analyzeRegs(simR,code);
   simConfig=analysis.config;
-  renderFindings(analysis.findings);renderRegDump(simR);
+  var extraFindings=smartLogicCheck(simR,code,analysis.findings,activeQ>=0);
+  if(activeQ>=0)extraFindings=extraFindings.concat(verifyLogic(simR,code,activeQ));
+  renderFindings(analysis.findings.concat(extraFindings));renderRegDump(simR);
   simFns=res.fns;syncIDR();
   simR.ADC1.DR=parseInt(document.getElementById('adc-slider').value)||0;
   declV={};
@@ -954,17 +1168,20 @@ function renderBoard(){
 function renderQuestions(){
   var html='<div style="font-size:10.5px;color:var(--fg-d);margin-bottom:6px;line-height:1.4">Practice prompts to get started. The analyzer works on <b>any</b> code you write.</div>';
   var lc='';QS.forEach(function(q,i){if(q.cat!==lc){html+='<div class="cat-hd">'+q.cat+'</div>';lc=q.cat;}
-    html+='<div class="q-card" onclick="showQ('+i+')"><div class="q-cat">'+q.cat+'</div><h4>'+q.t+'</h4><p>'+q.d+'</p></div>';});
+    html+='<div class="q-card" onclick="loadQ('+i+')"><div class="q-cat">'+q.cat+'</div><h4>'+q.t+'</h4><p>'+q.d+'</p></div>';});
   document.getElementById('p-questions').innerHTML=html;
 }
 function showQ(i){
   var q=QS[i];var html='<button class="back-btn" onclick="renderQuestions()">\u2190 Back</button>';
   html+='<div class="q-detail"><div class="q-cat">'+q.cat+'</div><h3>'+q.t+'</h3><p>'+q.d+'</p>';
-  html+='<div class="q-btns">';if(q.sol)html+='<button class="btn btn-s" onclick="loadSol('+i+')">Load Solution</button>';
-  html+='<button class="btn btn-p" onclick="editor.setValue(TEMPLATE)">Blank</button></div></div>';
+  html+='<div class="q-btns">';
+  html+='<button class="btn btn-p" onclick="activeQ='+i+';editor.setValue(TEMPLATE)">Try It (verify logic)</button>';
+  if(q.sol)html+='<button class="btn btn-s" onclick="loadSol('+i+')">Load Solution</button>';
+  html+='<button class="btn btn-p" onclick="activeQ=-1;editor.setValue(TEMPLATE)">Blank (no check)</button></div></div>';
   if(q.sol)html+='<div style="margin-top:8px"><div class="cat-hd">Reference</div><div class="sol-code">'+esc(q.sol)+'</div></div>';
   else html+='<div style="margin-top:8px;padding:10px;background:var(--wrn-s);border-radius:var(--rs);font-size:11px;color:var(--wrn)">No reference \u2014 try it yourself!</div>';
   document.getElementById('p-questions').innerHTML=html;
 }
-function loadSol(i){editor.setValue(QS[i].sol);runAll();}
+function loadSol(i){activeQ=i;editor.setValue(QS[i].sol);runAll();}
+function loadQ(i){activeQ=i;showQ(i);}
 </script>
