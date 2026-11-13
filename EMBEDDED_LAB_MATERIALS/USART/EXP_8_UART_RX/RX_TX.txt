@@ -1,0 +1,15 @@
+Step 1: Boot ThingsBoard Pi
+Make sure Thingsboard Pi is connected to internet
+Step 2: Start ThingsBoard Application
+3: sudo tailscale up
+4: Verify Tailscale status in the portal. (Laptop)
+5: Verify ThingsBoard by opening the portal. (Laptop)
+6:Sensor node 
+Make sure sensor node is connected to internet.
+3: sudo tailscale up
+4: Verify Tailscale status in the portal. (Laptop)
+
+Run visual studio code in the laptop
+
+Make sure visual studio is connected to the sensor node using SSH
+

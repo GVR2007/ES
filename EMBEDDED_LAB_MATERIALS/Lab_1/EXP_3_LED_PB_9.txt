@@ -1,0 +1,9 @@
+#include "stm32f4xx.h"
+int main (void)
+{
+RCC->AHB1ENR |= (1<<1); //clock to port B
+GPIOB->MODER |= (1<<18); // 18 th pin 1
+GPIOB->MODER &= ~(1<<19); // 19th pin 0
+GPIOB->ODR |=	(1<<9);	// turn ON LED on PB 9
+}
+	

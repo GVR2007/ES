@@ -1,0 +1,7 @@
+#include "stm32f4xx.h"
+int main (void)
+{
+RCC->AHB1ENR |= (1<<2);
+GPIOC->MODER |= (1<<28);
+GPIOC->ODR |=	(1<<14);
+}

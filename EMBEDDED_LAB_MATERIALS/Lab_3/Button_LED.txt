@@ -1,0 +1,25 @@
+#include "stm32f4xx.h"
+
+int main(void) {
+    // 1. Enable GPIOA & GPIOC clock
+    RCC->AHB1ENR |= (1U<<0);  // GPIOA
+    RCC->AHB1ENR |= (1U<<2);  // GPIOC
+
+    // 2. Set PA0 to input mode
+    GPIOA->MODER &= ~(3U << 0);  // MODER0 = 00 (input)
+    GPIOA->PUPDR &= ~(3U << 0);  // clear PUPDR0
+    GPIOA->PUPDR |=  (1U << 0);  // set PA0 pull-up (01)
+
+    // 3. Set PC13 to output mode
+    GPIOC->MODER &= ~(3U << 26); // MODER13 = 00
+    GPIOC->MODER |=  (1U << 26); // MODER13 = 01 (output)
+
+    while (1) {
+        // 4. Read PA0, drive PC13
+        if (GPIOA->IDR & (1U << 0)) {
+            GPIOC->ODR &= ~(1U << 13); // LED ON
+        } else {
+            GPIOC->ODR |=  (1U << 13); // LED OFF
+        }
+    }
+}

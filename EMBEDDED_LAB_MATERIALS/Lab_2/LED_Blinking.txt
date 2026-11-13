@@ -1,0 +1,14 @@
+#include "stm32f4xx.h"
+int main (void)
+{
+RCC->AHB1ENR |= (1<<1); //clock to port B
+GPIOB->MODER |= (1<<18);
+GPIOB->MODER &= ~(1<<19);//26th 1 and 27th0
+//blynk  
+	while(1){
+GPIOB->ODR |=	(1<<9);
+	for(int i=0;i<=500000;i++) {}
+GPIOB->ODR &=	~(1<<9);
+  for(int i=0;i<=500000;i++) {}		
+}
+	}
