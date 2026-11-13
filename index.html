@@ -30,7 +30,7 @@
 *,*::before,*::after{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);margin:0;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  padding-block:0;height:100vh;display:flex;flex-direction:column;overflow:auto}
 html{height:100%}
 
 /* ===== GATE ===== */
@@ -168,7 +168,7 @@ html{height:100%}
   border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
 .tab:hover{color:var(--fg-m)}
 .tab.active{color:var(--ac);border-bottom-color:var(--ac)}
-.tb-body{flex:1;overflow-y:auto;padding:8px 10px;min-height:0}
+.tb-body{flex:1;overflow-y:auto;padding:8px 10px;min-height:0;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
 .tp{display:none}.tp.active{display:block}
 
 /* ===== FINDINGS ===== */
@@ -226,7 +226,7 @@ html{height:100%}
 @media(max-width:700px){
   .main{flex-direction:column}
   .left,.right{flex:none}
-  .left{height:55%}.right{height:45%}
+  .left{min-height:280px}.right{min-height:320px}
   .hw-row{gap:10px}
   body{overflow:auto;height:auto}
   .gate-card{padding:28px 20px}
@@ -964,6 +964,70 @@ function smartLogicCheck(R,code,prevFindings,hasRefCheck){
   if(det.adc&&det.systick)combos.push('ADC + SysTick timing');
   if(det.usart&&ins.length)combos.push('Button \u2192 USART');
   if(combos.length)findings.push({s:'info',c:'Combined Logic',m:combos.join(' | ')});
+  // --- Bit-Level Validation ---
+  // Clock vs usage cross-check
+  var CLK_MAP={A:0,B:1,C:2};
+  ['A','B','C'].forEach(function(p){
+    var used=new RegExp('GPIO'+p+'\\s*->').test(c);
+    var clkOn=!!(R.RCC.AHB1ENR&(1<<CLK_MAP[p]));
+    if(used&&!clkOn){
+      var wrongBits=[];
+      for(var b=0;b<3;b++){if(b!==CLK_MAP[p]&&(R.RCC.AHB1ENR&(1<<b)))wrongBits.push('bit '+b+'=GPIO'+['A','B','C'][b]);}
+      if(wrongBits.length)findings.push({s:'error',c:'Bit Check',m:'GPIO'+p+' used but clock bit '+CLK_MAP[p]+' OFF \u2014 you enabled '+wrongBits.join(', ')+' instead?',h:'RCC->AHB1ENR |= (1 << '+CLK_MAP[p]+');'});
+      issues++;
+    }
+  });
+  // MODER sanity: check if output pins use (1<<pin*2) not (1<<pin)
+  ['A','B','C'].forEach(function(p){
+    for(var pin=0;pin<=15;pin++){
+      var m=(R['GPIO'+p].MODER>>>(pin*2))&3;
+      if(m===0)continue;
+      var modeNames=['input','output','AF','analog'];
+      // Check: did code set wrong MODER bits?
+      if(det.adc&&m!==3){
+        var ch=R.ADC1.SQR3&0x1F;var adcPort=ch<=7?'A':'B';var adcPin=ch<=7?ch:ch-8;
+        if(p===adcPort&&pin===adcPin)
+          findings.push({s:'error',c:'Bit Check',m:'P'+p+pin+' is ADC Ch'+ch+' input but MODER='+m+' ('+modeNames[m]+'), need 3 (analog)',h:'GPIO'+p+'->MODER |= (3 << '+(pin*2)+');'});
+      }
+    }
+  });
+  // AFR value cross-check for known peripherals
+  if(det.usart&&(R.USART2.CR1&(1<<3))){
+    var pa2af=(R.GPIOA.AFR[0]>>>8)&0xF;
+    if(pa2af!==0&&pa2af!==7)findings.push({s:'error',c:'Bit Check',m:'PA2 AF='+pa2af+' but USART2 TX needs AF7 \u2014 check AFR[0] bit shift (should be 7<<8)',h:'GPIOA->AFR[0] |= (7 << 8);'});
+  }
+  if(det.i2c){
+    var pb6af=(R.GPIOB.AFR[0]>>>24)&0xF,pb7af=(R.GPIOB.AFR[0]>>>28)&0xF;
+    if(pb6af!==0&&pb6af!==4)findings.push({s:'error',c:'Bit Check',m:'PB6 AF='+pb6af+' but I2C1 SCL needs AF4 \u2014 check AFR[0] bit shift (should be 4<<24)',h:'GPIOB->AFR[0] |= (4 << 24);'});
+    if(pb7af!==0&&pb7af!==4)findings.push({s:'error',c:'Bit Check',m:'PB7 AF='+pb7af+' but I2C1 SDA needs AF4 \u2014 check AFR[0] bit shift (should be 4<<28)',h:'GPIOB->AFR[0] |= (4 << 28);'});
+  }
+  // USART2 BRR common value check
+  if(det.usart&&R.USART2.BRR){
+    var knownBRR={0x0D05:4800,0x0683:9600,0x01A1:38400,0x008B:115200};
+    if(!knownBRR[R.USART2.BRR]){
+      var closest='';for(var kb in knownBRR){var diff=Math.abs(R.USART2.BRR-parseInt(kb));if(diff<50)closest=' (close to 0x'+parseInt(kb).toString(16).toUpperCase()+'='+knownBRR[kb]+'baud)';}
+      findings.push({s:'warn',c:'Bit Check',m:'BRR=0x'+hex(R.USART2.BRR)+' is not a standard value'+closest,h:'Common: 0x008B=115200, 0x0683=9600, 0x01A1=38400, 0x0D05=4800'});
+    }
+  }
+  // NVIC IRQ number cross-check for EXTI
+  if(det.exti){
+    for(var line=0;line<=15;line++){
+      if(!(R.EXTI.IMR&(1<<line)))continue;
+      var expectedIRQ=line<=4?line+6:line<=9?23:40;
+      var nvOk=expectedIRQ<32?(R.NVIC.ISER[0]&(1<<expectedIRQ)):(R.NVIC.ISER[1]&(1<<(expectedIRQ-32)));
+      if(!nvOk){
+        findings.push({s:'error',c:'Bit Check',m:'EXTI line '+line+' needs NVIC IRQ'+expectedIRQ+' \u2014 '+(expectedIRQ<32?'ISER[0] bit '+expectedIRQ:'ISER[1] bit '+(expectedIRQ-32)),
+          h:expectedIRQ<32?'NVIC->ISER[0] |= (1 << '+expectedIRQ+');':'NVIC->ISER[1] |= (1 << '+(expectedIRQ-32)+');'});
+        issues++;
+      }
+    }
+  }
+  // SysTick LOAD sanity
+  if(det.systick&&R.SysTick.LOAD>0){
+    var period=1000*(R.SysTick.LOAD+1)/16e6;
+    if(period<1)findings.push({s:'warn',c:'Bit Check',m:'SysTick period='+period.toFixed(2)+'ms (very fast) \u2014 LOAD='+R.SysTick.LOAD});
+    if(period>5000)findings.push({s:'warn',c:'Bit Check',m:'SysTick period='+period.toFixed(0)+'ms (very slow) \u2014 LOAD='+R.SysTick.LOAD});
+  }
   // --- PC13 note ---
   if(/GPIOC\s*->\s*ODR\s*\|=.*13/.test(c)&&/GPIOC\s*->\s*ODR\s*&=.*13/.test(c))
     findings.push({s:'info',c:'Note',m:'PC13 is active-low on Black Pill \u2014 ODR=0 turns LED ON, ODR=1 turns OFF'});
