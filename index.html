@@ -507,7 +507,7 @@ function initRegs(){
     EXTI:{IMR:0,EMR:0,FTSR:0,RTSR:0,PR:0},
     SYSCFG:{EXTICR:[0,0,0,0]},
     SysTick:{LOAD:0,VAL:0,CTRL:0},
-    I2C1:{CR1:0,CR2:0,CCR:0,TRISE:0,OAR1:0,SR1:0,SR2:0},
+    I2C1:{CR1:0,CR2:0,CCR:0,TRISE:0,OAR1:0,SR1:0,SR2:0,DR:0},
     NVIC:{ISER:[0,0,0]}
   };
 }
@@ -545,7 +545,9 @@ function execRegStmt(s,R){
     m=s.match(periphs[i][0]);
     if(m){var p=periphs[i][1](m);var obj=R[p[0]];if(!obj)return false;
       if(!(p[1] in obj))obj[p[1]]=0;
-      obj[p[1]]=applyOp(obj[p[1]],p[2],evalBit(p[3]));return true;}
+      obj[p[1]]=applyOp(obj[p[1]],p[2],evalBit(p[3]));
+      if(p[0]==='I2C1'&&p[1]==='DR')lcdI2cCapture.push(obj[p[1]]&0xFF);
+      return true;}
   }
   return false;
 }
@@ -977,6 +979,8 @@ function smartLogicCheck(R,code,prevFindings,hasRefCheck){
   }
   // --- Combination Detection ---
   var combos=[];
+  if(det.i2c&&/lcd_send_data|lcd_send_string|LCD_SendData|lcd_data|lcd_char/i.test(c))
+    findings.push({s:'pass',c:'I2C LCD',m:'LCD data output detected \u2014 check LCD panel below'});
   if(det.adc&&det.i2c)combos.push('ADC \u2192 I2C LCD');
   if(det.adc&&det.usart)combos.push('ADC \u2192 USART serial');
   if(det.adc&&outs.length&&/if/.test(active))combos.push('ADC threshold \u2192 LED');
@@ -1066,40 +1070,126 @@ function smartLogicCheck(R,code,prevFindings,hasRefCheck){
 // ===== SIMULATION STATE =====
 var simR=null,simV={},simLoopFn=null,simHandlerFns={},simFns={},simUart=[],simTickTimer=null,simConfig=null;
 
-// ===== I2C LCD SIMULATION =====
-var lcdRows=[[],[]], lcdCur=0, lcdCol=0, lcdOn=false, lcdI2cBuf=[];
-function lcdReset(){lcdRows=[[],[]];lcdCur=0;lcdCol=0;lcdOn=false;lcdI2cBuf=[];
+// ===== I2C LCD SIMULATION (PCF8574 + HD44780 16x2) =====
+var lcdRows=[[],[]], lcdCur=0, lcdCol=0, lcdOn=false;
+var lcdI2cBuf=[], lcdI2cCapture=[], lcdNibbleQ=[];
+
+function lcdReset(){
+  lcdRows=[[],[]];lcdCur=0;lcdCol=0;lcdOn=false;
+  lcdI2cBuf=[];lcdI2cCapture=[];lcdNibbleQ=[];
   document.getElementById('lcd-screen').className='lcd-screen';
   document.getElementById('lcd-screen').textContent='________________\n________________';
-  document.getElementById('lcd-wrap').classList.remove('show');}
-function lcdCmd(b){
-  if(b===0x01){lcdRows=[[],[]];lcdCur=0;lcdCol=0;}
-  else if(b===0x02){lcdCur=0;lcdCol=0;}
-  else if(b===0x0C||b===0x0E||b===0x0F){lcdOn=true;}
-  else if(b===0x08){lcdOn=false;}
-  else if((b&0xC0)===0x80){lcdCur=0;lcdCol=b&0x3F;}
-  else if((b&0xC0)===0xC0){lcdCur=1;lcdCol=b&0x3F;}
-  else if(b===0x28||b===0x38||b===0x06||b===0x14||b===0x10){}
+  document.getElementById('lcd-wrap').classList.remove('show');
 }
+
+function lcdCmd(b){
+  if(b===0x01||b===0x80){lcdRows=[[],[]];lcdCur=0;lcdCol=0;}
+  else if(b===0x02){lcdCur=0;lcdCol=0;}
+  else if((b&0xFE)===0x0C||(b&0xFE)===0x0E){lcdOn=true;}
+  else if(b===0x08){lcdOn=false;}
+  else if((b&0x80)===0x80){
+    var addr=b&0x7F;
+    if(addr>=0x40){lcdCur=1;lcdCol=addr-0x40;}
+    else{lcdCur=0;lcdCol=addr;}
+  }
+}
+
 function lcdData(b){
-  if(lcdCur<2&&lcdCol<16){lcdRows[lcdCur][lcdCol]=String.fromCharCode(b>=32&&b<127?b:32);lcdCol++;}
+  if(lcdCur<2&&lcdCol<16){
+    lcdRows[lcdCur][lcdCol]=String.fromCharCode(b>=32&&b<127?b:32);
+    lcdCol++;
+  }
   if(lcdCol>=16){lcdCol=0;lcdCur=(lcdCur+1)%2;}
 }
+
+// Process raw I2C bytes from PCF8574 backpack
+// PCF8574 pin mapping: D7-D4=data, D3=BL, D2=EN, D1=RW, D0=RS
 function lcdProcessI2C(bytes){
   for(var i=0;i<bytes.length;i++){
     var b=bytes[i];
     var rs=b&1, en=b&4, hi=b&0xF0;
     if(en){
-      if(!lcdI2cBuf.length)lcdI2cBuf.push({rs:rs,nibble:hi});
-      else{var prev=lcdI2cBuf.pop();var full=(prev.nibble)|(hi>>>4);
-        if(prev.rs)lcdData(full);else lcdCmd(full);lcdI2cBuf=[];}
+      lcdNibbleQ.push({rs:rs,nibble:hi});
+      if(lcdNibbleQ.length>=2){
+        var n1=lcdNibbleQ[0], n2=lcdNibbleQ[1];
+        var full=(n1.nibble)|(n2.nibble>>>4);
+        if(n1.rs)lcdData(full);else lcdCmd(full);
+        lcdNibbleQ=[];
+      }
+    }else{
+      // EN going low = latch; nibble already queued on EN high
     }
   }
 }
+
+// Source-level LCD analysis: parse lcd_send_cmd/lcd_send_data/lcd_send_string calls in source order
+function lcdAnalyzeSource(code){
+  var c=stripC(code);
+  // Extract only main body calls (after setup functions are defined)
+  var mainM=c.match(/\bmain\s*\([^)]*\)\s*\{/);
+  var src=mainM?c.substring(mainM.index):c;
+  // Also get handler/function bodies that are called from main
+  var fns=extractFunctions(c);
+  var fnBodies='';
+  for(var fn in fns){
+    if(fn!=='main'&&!/IRQHandler|Handler/.test(fn)&&/lcd_|LCD_/.test(fn))continue;
+    if(fn==='main'){
+      // Extract setup part (before while(1))
+      var body=fns[fn];
+      var loopM2=body.match(/while\s*\(\s*1\s*\)|for\s*\(\s*;\s*;\s*\)/);
+      fnBodies=loopM2?body.substring(0,loopM2.index):body;
+      // Also include loop body for dynamic LCD updates
+      if(loopM2){var aft=body.substring(loopM2.index);var bi=aft.indexOf('{');if(bi>=0)fnBodies+=' '+findBlock(aft,bi);}
+    }
+  }
+  if(!fnBodies)fnBodies=src;
+  // Find ALL lcd-related calls in order using a unified regex
+  var calls=[];
+  var uniRe=/\b(lcd_send_cmd|lcd_send_data|LCD_SendCmd|LCD_SendData|lcd_cmd|lcd_data|lcd_write_cmd|lcd_write_data|lcd_command|lcd_char|lcd_put|lcd_byte|lcd_send_string|lcd_print|lcd_puts|LCD_SendString|lcd_write_string|lcd_setCursor|LCD_SetCursor|lcd_set_cursor|lcd_goto)\s*\(\s*([^)]*)\)/g;
+  var m;
+  while((m=uniRe.exec(fnBodies))!==null){
+    var fn=m[1].toLowerCase();
+    var args=m[2].trim();
+    // String functions
+    if(fn.indexOf('string')>=0||fn==='lcd_print'||fn==='lcd_puts'){
+      var sm=args.match(/^"([^"]*)"$/);
+      if(sm){for(var i=0;i<sm[1].length;i++)calls.push({cmd:false,val:sm[1].charCodeAt(i)});}
+      continue;
+    }
+    // SetCursor functions: lcd_setCursor(col, row) or lcd_setCursor(row, col)
+    if(fn.indexOf('cursor')>=0||fn==='lcd_goto'){
+      var parts=args.split(',').map(function(x){return evalBit(x.trim());});
+      if(parts.length>=2){
+        var row=parts[0],col=parts[1];
+        // Common convention: (col,row) or (row,col) - detect from values
+        if(row>1&&col<=1){var t=row;row=col;col=t;}
+        calls.push({cmd:true,val:0x80+(row?0x40:0)+col});
+      }
+      continue;
+    }
+    // Single value functions
+    var val=evalBit(args);
+    var ch=args.match(/^'(.)'$/);if(ch)val=ch[1].charCodeAt(0);
+    var isCmd=fn.indexOf('cmd')>=0||fn.indexOf('command')>=0;
+    calls.push({cmd:isCmd,val:val});
+  }
+  if(calls.length>0){
+    lcdOn=true;
+    for(var i=0;i<calls.length;i++){
+      if(calls[i].cmd)lcdCmd(calls[i].val);
+      else lcdData(calls[i].val);
+    }
+  }
+  // Fallback: if no lcd_ functions, detect raw I2C DR writes with PCF8574 data
+  if(calls.length===0&&lcdI2cCapture.length>2){
+    lcdProcessI2C(lcdI2cCapture);
+  }
+}
+
 function lcdRender(){
   var el=document.getElementById('lcd-screen');
   var r0='',r1='';
-  for(var i=0;i<16;i++){r0+=lcdRows[0][i]||'_';r1+=lcdRows[1][i]||'_';}
+  for(var i=0;i<16;i++){r0+=lcdRows[0][i]||' ';r1+=lcdRows[1][i]||' ';}
   el.textContent=r0+'\n'+r1;
   el.className='lcd-screen'+(lcdOn?' on':'');
 }
@@ -1109,7 +1199,11 @@ function runAll(){
   if(simTickTimer){clearInterval(simTickTimer);simTickTimer=null;}
   document.getElementById('uart-out').textContent='\u2014';
   var code=editor.getValue();
+  lcdI2cCapture=[];
   var res=execSetup(code,simR);
+  // Analyze I2C LCD writes from source code
+  if(/I2C1\s*->/.test(code))lcdAnalyzeSource(code);
+  if(lcdOn)lcdRender();
   var analysis=analyzeRegs(simR,code);
   simConfig=analysis.config;
   var extraFindings=smartLogicCheck(simR,code,analysis.findings,activeQ>=0);
@@ -1130,7 +1224,7 @@ function runAll(){
   }
   updateHW();
   if(simConfig.adc){var mx=[4095,1023,255,63][[12,10,8,6].indexOf(simConfig.adc.res)];document.getElementById('adc-slider').max=mx||4095;}
-  if(simConfig.i2c){document.getElementById('lcd-wrap').classList.add('show');lcdOn=true;}
+  if(simConfig.i2c){document.getElementById('lcd-wrap').classList.add('show');if(!lcdOn)lcdOn=true;lcdRender();}
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.tp').forEach(function(x){x.classList.remove('active');});
   document.querySelector('[data-t="analysis"]').classList.add('active');
@@ -1219,6 +1313,8 @@ var QS=[
 {cat:'Eval',t:'Photo Storage System',d:'S2(PA6)=upload(blink PB9 5x), S1(PB10)=download(blink PC14 5x), KEY(PA0)=delete. PC13=full at 3.',sol:null},
 {cat:'Eval',t:'Smart Parking System',d:'S1(PB10)=entry(blink PB9 3x), S2(PA6)=exit(blink PC14 3x), KEY(PA0)=reset. PC13=full at 5.',sol:null},
 {cat:'Logic',t:'2-bit Binary Selector',d:'PA6(b0),PB10(b1): 00->PC13, 01->PC14, 10->PB9, 11->OFF.',sol:'#include "stm32f4xx.h"\nint main(void) {\n    RCC->AHB1ENR |= (1 << 0) | (1 << 1) | (1 << 2);\n    GPIOA->MODER &= ~(3 << 12);\n    GPIOA->PUPDR |= (1 << 12);\n    GPIOB->MODER &= ~(3 << 20);\n    GPIOB->PUPDR |= (1 << 20);\n    GPIOC->MODER |= (1 << 26) | (1 << 28);\n    GPIOB->MODER |= (1 << 18);\n    while (1) {\n        int b0 = (GPIOA->IDR & (1 << 6)) ? 1 : 0;\n        int b1 = (GPIOB->IDR & (1 << 10)) ? 1 : 0;\n        int val = (b1 << 1) | b0;\n        GPIOC->ODR &= ~((1 << 13) | (1 << 14));\n        GPIOB->ODR &= ~(1 << 9);\n        if (val == 0) GPIOC->ODR |= (1 << 13);\n        else if (val == 1) GPIOC->ODR |= (1 << 14);\n        else if (val == 2) GPIOB->ODR |= (1 << 9);\n    }\n}'},
+{cat:'I2C LCD',t:'I2C LCD Hello World',d:'Init I2C1 on PB6/PB7, send "Hello" on line 1 and "World" on line 2 of 16x2 LCD (addr 0x27).',sol:'#include "stm32f4xx.h"\nvoid i2c_start(void){I2C1->CR1|=(1<<8);while(!(I2C1->SR1&1)){}}\nvoid i2c_addr(uint8_t a){I2C1->DR=a;while(!(I2C1->SR1&2)){}(void)I2C1->SR2;}\nvoid i2c_write(uint8_t d){while(!(I2C1->SR1&(1<<7))){}I2C1->DR=d;}\nvoid i2c_stop(void){I2C1->CR1|=(1<<9);}\nvoid lcd_send_nibble(uint8_t v,uint8_t rs){uint8_t b=(v&0xF0)|rs|0x08;i2c_write(b|0x04);i2c_write(b);}\nvoid lcd_send_cmd(uint8_t c){lcd_send_nibble(c,0);lcd_send_nibble(c<<4,0);}\nvoid lcd_send_data(uint8_t d){lcd_send_nibble(d,1);lcd_send_nibble(d<<4,1);}\nvoid lcd_send_string(const char*s){while(*s)lcd_send_data(*s++);}\nint main(void){\n    RCC->AHB1ENR|=(1<<1);\n    RCC->APB1ENR|=(1<<21);\n    GPIOB->MODER|=(2<<12)|(2<<14);\n    GPIOB->OTYPER|=(1<<6)|(1<<7);\n    GPIOB->AFR[0]|=(4<<24)|(4<<28);\n    I2C1->CR2=16;I2C1->CCR=80;I2C1->TRISE=17;\n    I2C1->CR1|=1;\n    i2c_start();i2c_addr(0x4E);\n    lcd_send_cmd(0x28);lcd_send_cmd(0x0C);\n    lcd_send_cmd(0x06);lcd_send_cmd(0x01);\n    lcd_send_string("Hello");\n    lcd_send_cmd(0xC0);\n    lcd_send_string("World");\n    i2c_stop();\n    while(1){}\n}'},
+{cat:'I2C+ADC',t:'ADC Value on LCD',d:'Read ADC1 Ch0 (PA0) and display value on I2C LCD line 1. Show "ADC:" on line 1, value on line 2.',sol:null},
 ];
 
 // ===== UI =====
@@ -1266,6 +1362,7 @@ function renderRegDump(R){
   if(R.EXTI.IMR)html+='\nEXTI.IMR  = 0x'+hex(R.EXTI.IMR)+'\nEXTI.FTSR = 0x'+hex(R.EXTI.FTSR)+'\nEXTI.RTSR = 0x'+hex(R.EXTI.RTSR)+'\n';
   if(R.I2C1.CCR||R.I2C1.CR1||R.I2C1.CR2)html+='\nI2C1.CR1   = 0x'+hex(R.I2C1.CR1)+'\nI2C1.CR2   = 0x'+hex(R.I2C1.CR2)+'\nI2C1.CCR   = '+R.I2C1.CCR+'\nI2C1.TRISE = '+R.I2C1.TRISE+'\n';
   if(R.NVIC.ISER[0]||R.NVIC.ISER[1])html+='\nNVIC.ISER[0] = 0x'+hex(R.NVIC.ISER[0])+'\nNVIC.ISER[1] = 0x'+hex(R.NVIC.ISER[1])+'\n';
+  if(R.I2C1.DR!==undefined)html+='\nI2C1.DR    = 0x'+hex(R.I2C1.DR)+'\n';
   html+='</div></div>';
   if(simConfig){
     if(simConfig.pins.length){html+='<div class="cfg-block"><h4>Pin Config</h4><table class="pin-tbl"><tr><th>Pin</th><th>Mode</th><th>Pull</th></tr>';
